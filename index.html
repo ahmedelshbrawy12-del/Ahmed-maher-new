@@ -1,5 +1,11 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<script>
+window.__errs=[];function __show(m){window.__errs.push(m);var d=document.getElementById("dbg");if(!d&&document.body){d=document.createElement("div");d.id="dbg";d.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#b00020;color:#fff;font:12px monospace;padding:6px 8px;direction:ltr;max-height:30vh;overflow:auto;pointer-events:none";document.body.appendChild(d)}if(d)d.textContent=window.__errs.slice(-3).join(" | ")}
+addEventListener("error",function(e){__show("ERR: "+(e.message||"")+" @"+(e.lineno||""))});
+addEventListener("unhandledrejection",function(e){__show("REJ: "+((e.reason&&e.reason.message)||e.reason))});
+</script>
+<style>html,body{touch-action:manipulation;-webkit-tap-highlight-color:rgba(31,111,235,.15)}</style>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>تصفية العهد</title>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#283580"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
@@ -101,7 +107,7 @@ function render(){
  const tc=S.sites.reduce((a,s)=>a+s.custody,0),ts=S.sites.reduce((a,s)=>a+spent(s),0);
  if(view==="main"){
    const pe=pspent(),rb=pbal()-pe,mine=rb-(tc-ts);
-   A.innerHTML=`<h1>الرئيسية</h1><div class="m" dir="ltr" style="margin:-8px 0 10px;text-align:right">${ME?esc(ME.email):""}</div><div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span class="m">${S.sites.length} موقع</span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
+   A.innerHTML=`<h1>الرئيسية</h1><div class="m" dir="ltr" style="margin:-8px 0 10px;text-align:right">${ME?esc(ME.email)+" · v4":""}</div><div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span class="m">${S.sites.length} موقع</span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
    <div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span class="m">${P.exp.length} مصروف</span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div>`+
    `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div>`;
    T.style.display="none";
