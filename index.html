@@ -89,11 +89,12 @@ const $=id=>document.getElementById(id);
 let ME=null,LAST={},SYNC=false,PERS_INIT=false;
 const f=n=>Number(n||0).toLocaleString("ar-EG")+" ج";
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const spent=s=>s.expenses.reduce((a,e)=>a+e.amt,0);
+const spent=s=>(s&&Array.isArray(s.expenses)?s.expenses:[]).reduce((a,e)=>a+(+(e&&e.amt)||0),0);
+function normSites(l){return(Array.isArray(l)?l:[]).filter(x=>x&&typeof x==="object"&&x.id).map(x=>{x.name=String(x.name||"موقع");x.custody=+x.custody||0;x.expenses=(Array.isArray(x.expenses)?x.expenses:[]).filter(e=>e&&e.id).map(e=>{e.desc=String(e.desc||"");e.amt=+e.amt||0;e.img=e.img||"";return e});return x})}
 let P={inc:[],exp:[]};try{const x=JSON.parse(localStorage.getItem("custpers")||"null");if(x&&Array.isArray(x.exp)){P={inc:Array.isArray(x.inc)?x.inc:[],exp:x.exp};if(!P.inc.length&&+x.bal>0)P.inc.push({id:"i"+Date.now(),desc:"رصيد سابق",amt:+x.bal})}}catch(e){}
 const LEG={S:JSON.parse(JSON.stringify(S)),P:JSON.parse(JSON.stringify(P))};
-const pbal=()=>P.inc.reduce((a,e)=>a+e.amt,0);
-const pspent=()=>P.exp.reduce((a,e)=>a+e.amt,0);
+const pbal=()=>(P.inc||[]).reduce((a,e)=>a+(+e.amt||0),0);
+const pspent=()=>(P.exp||[]).reduce((a,e)=>a+(+e.amt||0),0);
 const saveP=()=>cloudPers();
 const save=()=>cloudSites();
 function imgBlock(s){const L=s.expenses.filter(e=>e.img||IMG[e.id]);if(!L.length)return"";
@@ -101,13 +102,15 @@ function imgBlock(s){const L=s.expenses.filter(e=>e.img||IMG[e.id]);if(!L.length
 function siteBlock(s){
  return `<div class="card"><div class="sn">${esc(s.name)}</div><div class="row" style="margin-bottom:6px"><span class="ok">العهدة: ${f(s.custody)}</span><span class="${s.custody-spent(s)<0?'bad':'ok'}">المتبقي: ${f(s.custody-spent(s))}</span></div>
  <table><tr><th>البيان</th><th>المبلغ</th></tr>${s.expenses.map(e=>`<tr><td>${esc(e.desc)}</td><td>${f(e.amt)}</td></tr>`).join("")}<tr class="tt"><td><b>الإجمالي</b></td><td><b>${f(spent(s))}</b></td></tr></table>${imgBlock(s)}</div>`}
-function render(){
+function render(){try{render0()}catch(e){console.warn(e);if(window.__show)__show("RENDER: "+e.message)}}
+function render0(){
  document.body.classList.toggle("rep",view==="report"||view==="sreport");
  const A=$("app"),T=$("tot");
+ if(!Array.isArray(S.sites))S.sites=[];
  const tc=S.sites.reduce((a,s)=>a+s.custody,0),ts=S.sites.reduce((a,s)=>a+spent(s),0);
  if(view==="main"){
    const pe=pspent(),rb=pbal()-pe,mine=rb-(tc-ts);
-   A.innerHTML=`<h1>الرئيسية</h1><div class="m" dir="ltr" style="margin:-8px 0 10px;text-align:right">${ME?esc(ME.email)+" · v4":""}</div><div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span class="m">${S.sites.length} موقع</span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
+   A.innerHTML=`<h1>الرئيسية</h1><div class="m" dir="ltr" style="margin:-8px 0 10px;text-align:right">${ME?esc(ME.email)+" · v5":""}</div><div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span class="m">${S.sites.length} موقع</span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
    <div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span class="m">${P.exp.length} مصروف</span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div>`+
    `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div>`;
    T.style.display="none";
@@ -254,14 +257,14 @@ async function bgImgs(){try{const o=await CLOUD.allImgs();let n=0;for(const k in
 async function migrate(){await IDBREADY;let mg=null;try{mg=localStorage.getItem("custmig")}catch(e){}
  const has=LEG.S.sites.length||LEG.P.exp.length||LEG.P.inc.length;
  if((mg&&mg!==ME.uid)||!has){render();return}
- S.sites=JSON.parse(JSON.stringify(LEG.S.sites));
+ S.sites=normSites(JSON.parse(JSON.stringify(LEG.S.sites)));
  if(!P.inc.length&&!P.exp.length){P.inc=JSON.parse(JSON.stringify(LEG.P.inc));P.exp=JSON.parse(JSON.stringify(LEG.P.exp))}
  for(const s of S.sites)for(const e of s.expenses){if(IMG[e.id])await cloudImg(e.id,IMG[e.id])}
  cloudSites();cloudPers();try{localStorage.setItem("custmig",ME.uid)}catch(e){}
  render();alert("تم نقل بياناتك القديمة إلى حسابك")}
 window.onSites=function(list,fromCache){if(!ME)return;const first=!SYNC;
  if(first&&!list.length){if(fromCache)return;SYNC=true;migrate();return}
- SYNC=true;list.sort((a,b)=>(parseInt(a.id.slice(1))||0)-(parseInt(b.id.slice(1))||0)||(a.id<b.id?-1:1));
+ SYNC=true;list=normSites(list);list.sort((a,b)=>(parseInt(a.id.slice(1))||0)-(parseInt(b.id.slice(1))||0)||(a.id<b.id?-1:1));
  S.sites=list;LAST={};list.forEach(s=>LAST[s.id]=JSON.stringify(s));
  if(cur&&!S.sites.find(x=>x.id===cur)&&(view==="site"||view==="sreport")){view="home";cur=null}
  render()};
