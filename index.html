@@ -139,18 +139,13 @@ function siteBlock(s){
  return `<div class="card"><div class="sn">${esc(s.name)}</div><div class="row" style="margin-bottom:6px"><span class="ok">العهدة: ${f(s.custody)}</span><span class="${s.custody-spent(s)<0?'bad':'ok'}">المتبقي: ${f(s.custody-spent(s))}</span></div>
  <table><tr><th>البيان</th><th>المبلغ</th></tr>${s.expenses.map(e=>`<tr><td>${esc(e.desc)}</td><td>${f(e.amt)}</td></tr>`).join("")}<tr class="tt"><td><b>الإجمالي</b></td><td><b>${f(spent(s))}</b></td></tr></table>${imgBlock(s)}</div>`}
 function doRefresh(){try{if(view==="note"&&window.noteSave)noteSave(0)}catch(e){}location.reload()}
-function addRf(){const A=$("app");if(!A||A.querySelector(".rfb"))return;
- const mk=()=>{const b=document.createElement("button");b.className="btn g rfb";b.textContent="🔄";b.title="تحديث الصفحة";b.setAttribute("onclick","doRefresh()");return b};
- const row=A.querySelector(".row");const back=row&&[...row.children].find(x=>x.tagName==="BUTTON"&&/رجوع/.test(x.textContent));
- if(back){back.after(mk());return}
- if(view==="main"){const h=A.querySelector("h1");if(h){const b=mk();b.style.cssText="align-self:flex-start;margin-bottom:6px";h.before(b)}}}
 function navSave(){try{if(!ME||PEND||document.body.classList.contains("locked"))return;sessionStorage.setItem("cust_nav",JSON.stringify({v:view,c:cur,n:(typeof NID!=="undefined"?NID:null)}))}catch(e){}}
 function navRestore(){let x=null;try{x=JSON.parse(sessionStorage.getItem("cust_nav")||"null")}catch(e){}
  if(!x||!x.v)return;const v=x.v;
  if(v==="home"||v==="personal"||v==="notes"||v==="report"){view=v;return}
  if(v==="note"){const n=(N.notes||[]).find(z=>z.id===x.n);if(n&&!n.lock){NID=x.n;view="note"}else view="notes";return}
  if((v==="site"||v==="sreport")&&x.c){view="home";PEND={v:v,c:x.c};setTimeout(function(){PEND=null},10000)}}
-function render(){try{if(PEND&&S&&Array.isArray(S.sites)){const s0=S.sites.find(z=>z.id===PEND.c);if(s0){view=PEND.v;cur=PEND.c;PEND=null}}render0();addRf();navSave()}catch(e){console.warn(e);if(window.__show)__show("RENDER: "+e.message)}}
+function render(){try{if(PEND&&S&&Array.isArray(S.sites)){const s0=S.sites.find(z=>z.id===PEND.c);if(s0){view=PEND.v;cur=PEND.c;PEND=null}}render0();navSave()}catch(e){console.warn(e);if(window.__show)__show("RENDER: "+e.message)}}
 function render0(){
  document.body.classList.toggle("rep",view==="report"||view==="sreport");
  const A=$("app"),T=$("tot");
@@ -158,9 +153,9 @@ function render0(){
  const tc=S.sites.reduce((a,s)=>a+s.custody,0),ts=S.sites.reduce((a,s)=>a+spent(s),0);
  if(view==="main"){
    const pe=pspent(),rb=pbal()-pe,mine=rb-(tc-ts);
-   A.innerHTML=`<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 175px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))"><h1>الرئيسية</h1><div style="margin:auto 0"><div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${S.sites.length} موقع</span><button class="btn g" style="padding:4px 10px;margin:0" onclick="event.stopPropagation();doRefresh()">🔄</button></span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
-   <div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span><button class="btn g" style="padding:4px 10px;margin:0" onclick="event.stopPropagation();doRefresh()">🔄</button></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div>`+
-   `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(ME.email)+" · v6":""}</div></div>`;
+   A.innerHTML=`<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 175px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))"><div style="display:flex;align-items:center;gap:10px;margin:6px 0 14px"><h1 style="margin:0">الرئيسية</h1><button class="btn g" style="padding:4px 10px;margin:0" title="تحديث" onclick="doRefresh()">🔄</button></div><div style="margin:auto 0"><div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${S.sites.length} موقع</span></span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
+   <div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div>`+
+   `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(ME.email)+" · v7":""}</div></div>`;
    T.style.display="none";
   }else if(view==="personal"){
    const pe=pspent(),rb=pbal()-pe,rs=tc-ts,mine=rb-rs;T.style.display="none";
@@ -216,54 +211,62 @@ function saveEdit(id){const d=$("a").value.trim(),m=+$("b").value;if(!d||!m)retu
   save();$("dlg").close();render()};
  if(!file)return fin("","");
  const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const mk=(mx,q)=>{const k=Math.min(1,mx/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);return c.toDataURL("image/jpeg",q)};fin(mk(1400,.7),mk(200,.6))};i.src=r.result};r.readAsDataURL(file)}
-let PIN=(()=>{try{return localStorage.getItem("custpin")||"0000"}catch(e){return"0000"}})();
+let PINH=(()=>{try{return localStorage.getItem("custpinh")||""}catch(e){return""}})();
+async function pinHash(p){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("cust:"+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){return"p:"+p}}
+async function setPin(p){PINH=await pinHash(p);try{localStorage.setItem("custpinh",PINH);localStorage.removeItem("custpin")}catch(e){}}
+async function pinOk(v){v=String(v||"");if(!v)return false;if(PINH&&(await pinHash(v))===PINH)return true;try{await CLOUD.checkPw(v);await setPin(v);return true}catch(e){return false}}
 function askDel(kind,id){askPin(kind,id)}
 function askPin(kind,id){const ed=kind==="edit",op=kind==="open";
  const M={exp:"⚠️ تنبيه: أنت على وشك حذف مصروف نهائيًا. هيتشال من الإجمالي والتقارير ومعاه صورته.",site:"⚠️ تنبيه: أنت على وشك حذف الموقع بالكامل بكل مصروفاته وصور فواتيره.",img:"⚠️ تنبيه: أنت على وشك حذف صورة الفاتورة المحفوظة لهذا المصروف.",edit:"⚠️ تنبيه: أنت على وشك تعديل مصروف مسجّل. التعديل بيغيّر الإجمالي والمتبقي في الصفحة وفي التقارير، وبيتحفظ مباشرة.",open:"اكتب الرقم السري عشان تدخل الموقع."}[kind];
  const B=op?"دخول":ed?"متابعة للتعديل":"حذف نهائي";
- dlg(`<h3>${op?"🔒 دخول الموقع":"⚠️ الرقم السري مطلوب"}</h3><div class="m" style="line-height:2">${M}${op?"":"<br>اكتب الرقم السري للمتابعة."}</div>${op?"":`<div class="m" style="margin-top:6px">الرقم السري: <b>${PIN}</b></div>`}<input id="pin" type="password" inputmode="numeric" maxlength="32" placeholder="الرقم السري"><div id="pe" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn" style="${ed||op?"":"background:var(--bad)"}" onclick="doDel('${kind}','${id}')">${B}</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
-function chPin(){dlg(`<h3>🔑 تغيير الرقم السري</h3><input id="p0" type="password" inputmode="numeric" placeholder="الرقم السري الحالي"><input id="p1" type="password" maxlength="32" placeholder="الرقم السري الجديد (من 4 إلى 32 رقم)"><input id="p2" type="password" maxlength="32" placeholder="تأكيد الرقم الجديد"><div id="pe" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn" onclick="savePin()">حفظ</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
-function savePin(){const a=$("p0").value,b=$("p1").value,c=$("p2").value,e=$("pe");
- if(a!==PIN)return e.textContent="الرقم السري الحالي غير صحيح";
- if(b.length<4)return e.textContent="الرقم الجديد لازم يكون 4 أرقام على الأقل (ويمكن يوصل 32)";
+ dlg(`<h3>${op?"🔒 دخول الموقع":"⚠️ الرقم السري مطلوب"}</h3><div class="m" style="line-height:2">${M}${op?"":"<br>اكتب الرقم السري للمتابعة."}</div><input id="pin" type="password" autocomplete="off" placeholder="الرقم السري (نفس باسورد الإيميل)"><div id="pe" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn" style="${ed||op?"":"background:var(--bad)"}" onclick="doDel('${kind}','${id}')">${B}</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
+function chPin(){dlg(`<h3>🔑 تغيير الرقم السري</h3><div class="m" style="line-height:1.9">الرقم ده هو نفسه باسورد الإيميل اللي بتسجّل بيه الدخول، وهيتغيّر الاتنين مع بعض.</div><input id="p0" type="password" autocomplete="current-password" placeholder="الرقم السري الحالي"><input id="p1" type="password" autocomplete="new-password" placeholder="الرقم السري الجديد (6 على الأقل)"><input id="p2" type="password" autocomplete="new-password" placeholder="تأكيد الرقم الجديد"><div id="pe" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button id="psv" class="btn" onclick="savePin()">حفظ</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
+async function savePin(){const a=$("p0").value,b=$("p1").value,c=$("p2").value,e=$("pe"),bt=$("psv");
+ if(!a)return e.textContent="اكتب الرقم السري الحالي";
+ if(b.length<6)return e.textContent="الرقم الجديد لازم يكون 6 حروف أو أرقام على الأقل";
  if(b!==c)return e.textContent="الرقمين مش متطابقين";
- PIN=b;try{localStorage.setItem("custpin",b)}catch(x){}hint();$("dlg").close();alert("تم تغيير الرقم السري")}
-function doDel(kind,id){if($("pin").value!==PIN){$("pe").textContent="الرقم السري غير صحيح";$("pin").value="";return}
+ if(b===a)return e.textContent="الرقم الجديد زي القديم";
+ if(!window.CLOUD||!ME)return e.textContent="لازم تكون مسجّل دخول ومتصل بالإنترنت";
+ bt.disabled=true;e.style.color="var(--mut)";e.textContent="⏳ جاري التغيير...";
+ try{await CLOUD.changePw(a,b);await setPin(b);$("dlg").close();alert("تم تغيير الرقم السري وباسورد الإيميل")}
+ catch(x){bt.disabled=false;e.style.color="";const k=(x&&x.code)||"";
+  e.textContent=/invalid-credential|wrong-password/.test(k)?"الرقم السري الحالي غير صحيح":k==="auth/weak-password"?"الرقم الجديد ضعيف":k==="auth/too-many-requests"?"محاولات كتير، استنى شوية وحاول تاني":k==="auth/network-request-failed"?"مفيش اتصال بالإنترنت":"حصل خطأ: "+k}}
+async function doDel(kind,id){if(!(await pinOk($("pin").value))){$("pe").textContent="الرقم السري غير صحيح";$("pin").value="";return}
  if(kind==="open"){$("dlg").close();openSite(id);return}
  if(kind==="edit"){editExp2(id);return}
  if(kind==="exp"){const s=S.sites.find(x=>x.id===cur);s.expenses=s.expenses.filter(e=>e.id!==id);idbDel(id)}
  else if(kind==="site"){S.sites.find(x=>x.id===cur).expenses.forEach(e=>idbDel(e.id));S.sites=S.sites.filter(x=>x.id!==cur);view="home"}
  else if(kind==="img"){const e=findExp(id);if(e){idbDel(id);e.img=""}}
  save();$("dlg").close();render()}
-function hint(){const h=$("lhint");if(!h)return;if(PIN==="0000"){h.innerHTML="الرقم السري الحالي: <b>0000</b><br>تقدر تغيّره من الصفحة الرئيسية بعد الدخول";h.style.display="block"}else h.style.display="none"}
-function unlock(){const v=$("lpin").value;if(v!==PIN){$("lerr").textContent="الرقم السري غير صحيح";$("lpin").value="";return}$("lerr").textContent="";$("lpin").value="";document.body.classList.remove("locked");$("lock").style.display="none";render();scrollTo(0,0)}
+function hint(){}
 function lockApp(){dlg(`<h3>🚪 تسجيل الخروج</h3><div class="m" style="line-height:2">هتخرج من حسابك، وبياناتك فاضلة محفوظة على السحابة.</div><div class="row" style="margin-top:12px"><button class="btn r" onclick="$('dlg').close();try{CLOUD.logout()}catch(e){}">خروج</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 let IMPD=null;
 function mkThumb(u){return new Promise(r=>{try{const i=new Image();i.onload=()=>{try{const k=Math.min(1,200/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);r(c.toDataURL("image/jpeg",.6))}catch(e){r("")}};i.onerror=()=>r("");i.src=u}catch(e){r("")}})}
 function importData(){dlg(`<h3>📥 استيراد البيانات</h3><div class="m" style="line-height:2">اختار ملف النسخة الاحتياطية (JSON) اللي صدّرته قبل كده.</div><input id="imf" type="file" accept=".json,application/json"><div id="pe" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn" onclick="readImport()">متابعة</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 function readImport(){const fl=$("imf").files[0],er=$("pe");if(!fl)return er.textContent="اختار الملف الأول";
  const r=new FileReader();r.onload=()=>{let d;try{d=JSON.parse(r.result)}catch(x){return er.textContent="الملف غير صالح"}
-  if(!d||!Array.isArray(d.sites))return er.textContent="الملف مش نسخة احتياطية من التطبيق";
-  IMPD=d;const ns=d.sites.length,ne=d.sites.reduce((a,x)=>a+(x.expenses||[]).length,0),pp=d.personal||{},nb=(pp.balance||[]).length+(+pp.bal>0?1:0),npe=(pp.expenses||[]).length;
-  dlg(`<h3>📥 تأكيد الاستيراد</h3><div class="m" style="line-height:2">الملف فيه: ${ns} موقع، ${ne} مصروف مواقع، ${nb} خانة رصيد، ${npe} مصروف شخصي.</div><div class="m" style="line-height:2;margin-top:6px"><b>إضافة للموجود:</b> بيتضاف جنب بياناتك الحالية.<br><b>استبدال الكل:</b> بيمسح البيانات الحالية ويحط اللي في الملف.</div><div class="row" style="margin-top:12px"><button class="btn" onclick="doImport(false)">إضافة للموجود</button><button class="btn r" onclick="doImport(true)">استبدال الكل</button></div><button class="btn g" style="margin-top:8px;width:100%" onclick="$('dlg').close()">إلغاء</button>`)};
+  if(!d||(!Array.isArray(d.sites)&&!Array.isArray(d.notes)&&!d.personal))return er.textContent="الملف مش نسخة احتياطية من التطبيق";
+  IMPD=d;const SL=Array.isArray(d.sites)?d.sites:[],nn=Array.isArray(d.notes)?d.notes.length:0,ns=SL.length,ne=SL.reduce((a,x)=>a+(x.expenses||[]).length,0),pp=d.personal||{},nb=(pp.balance||[]).length+(+pp.bal>0?1:0),npe=(pp.expenses||[]).length;
+  dlg(`<h3>📥 تأكيد الاستيراد</h3><div class="m" style="line-height:2">الملف فيه: ${ns} موقع، ${ne} مصروف مواقع، ${nb} خانة رصيد، ${npe} مصروف شخصي، ${nn} ملاحظة.</div><div class="m" style="line-height:2;margin-top:6px"><b>إضافة للموجود:</b> بيتضاف جنب بياناتك الحالية.<br><b>استبدال الكل:</b> بيمسح البيانات الحالية ويحط اللي في الملف.</div><div class="row" style="margin-top:12px"><button class="btn" onclick="doImport(false)">إضافة للموجود</button><button class="btn r" onclick="doImport(true)">استبدال الكل</button></div><button class="btn g" style="margin-top:8px;width:100%" onclick="$('dlg').close()">إلغاء</button>`)};
  r.readAsText(fl)}
 async function doImport(rep){const d=IMPD;if(!d)return;let n=0;const t=Date.now();
- if(rep)S.sites.forEach(x=>x.expenses.forEach(e=>idbDel(e.id)));
+ if(rep&&Array.isArray(d.sites))S.sites.forEach(x=>x.expenses.forEach(e=>idbDel(e.id)));
  const add=[];
- for(const x of d.sites){const o={id:"s"+t+"_"+(n++),name:String(x.name||"موقع"),custody:+x.custody||0,expenses:[]};
+ for(const x of (Array.isArray(d.sites)?d.sites:[])){const o={id:"s"+t+"_"+(n++),name:String(x.name||"موقع"),custody:+x.custody||0,expenses:[]};
   for(const y of (x.expenses||[])){const id="e"+t+"_"+(n++),e={id,desc:String(y.desc||""),amt:+y.amt||0,img:""};
    if(y.img){const th=await mkThumb(y.img),ok=await idbPut(id,y.img);if(ok){IMG[id]=y.img;e.img=th}else e.img=y.img}
    o.expenses.push(e)}
   add.push(o)}
- S.sites=(rep?[]:S.sites).concat(add);save();
+ if(Array.isArray(d.sites)){S.sites=(rep?[]:S.sites).concat(add);save()}
  const pp=d.personal;
  if(pp){if(rep){P.inc=[];P.exp=[]}
   (pp.balance||[]).forEach(y=>P.inc.push({id:"i"+t+"_"+(n++),desc:String(y.desc||""),amt:+y.amt||0}));
   if(!(pp.balance||[]).length&&+pp.bal>0)P.inc.push({id:"i"+t+"_"+(n++),desc:"رصيد سابق",amt:+pp.bal});
   (pp.expenses||[]).forEach(y=>P.exp.push({id:"p"+t+"_"+(n++),desc:String(y.desc||""),amt:+y.amt||0}));
   saveP()}
+ if(Array.isArray(d.notes)){const inn=d.notes.filter(y=>y&&typeof y==="object").map(y=>{const o=Object.assign({},y);o.id="n"+t+"_"+(n++);o.title=String(y.title||"");o.body=nClean(y.body);o.c=+y.c||t;o.u=+y.u||t;return o});N.notes=(rep?[]:N.notes).concat(inn);cloudNotes()}
  IMPD=null;$("dlg").close();view="main";render();alert("تم الاستيراد")}
-async function exportData(){const out={v:1,personal:{balance:P.inc.map(e=>({desc:e.desc,amt:e.amt})),expenses:P.exp.map(e=>({desc:e.desc,amt:e.amt}))},sites:S.sites.map(s=>({name:s.name,custody:s.custody,expenses:s.expenses.map(e=>({desc:e.desc,amt:e.amt,img:IMG[e.id]||e.img||""}))}))};
+async function exportData(){const out={v:2,notes:JSON.parse(JSON.stringify(N.notes||[])),personal:{balance:P.inc.map(e=>({desc:e.desc,amt:e.amt})),expenses:P.exp.map(e=>({desc:e.desc,amt:e.amt}))},sites:S.sites.map(s=>({name:s.name,custody:s.custody,expenses:s.expenses.map(e=>({desc:e.desc,amt:e.amt,img:IMG[e.id]||e.img||""}))}))};
  const blob=new Blob([JSON.stringify(out)],{type:"application/json"}),name="custody-backup-"+new Date().toISOString().slice(0,10)+".json";
  try{const file=new File([blob],name,{type:"application/json"});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return}}catch(e){if(e&&e.name==="AbortError")return}
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()}
@@ -327,12 +330,12 @@ window.onAuth=function(u){
  if(typeof notesReset==="function")notesReset(u);
  if(u)navRestore();else{try{sessionStorage.removeItem("cust_nav")}catch(e){}}
  if(u){try{localStorage.setItem("cust_in","1")}catch(e){}ME=u;$("lpw").value="";document.body.classList.remove("locked");$("lock").style.display="none";render();scrollTo(0,0);CLOUD.start();bgImgs()}
- else{ME=null;try{CLOUD.stop()}catch(e){}document.body.classList.add("locked");$("lock").style.display="flex";let lost=false;try{lost=localStorage.getItem("cust_in")==="1";localStorage.removeItem("cust_in")}catch(e){}lmsg(lost?"انتهت جلسة الدخول، سجّل دخولك مرة تانية":"");render()}};
+ else{ME=null;PINH="";try{localStorage.removeItem("custpinh")}catch(e){}try{CLOUD.stop()}catch(e){}document.body.classList.add("locked");$("lock").style.display="flex";let lost=false;try{lost=localStorage.getItem("cust_in")==="1";localStorage.removeItem("cust_in")}catch(e){}lmsg(lost?"انتهت جلسة الدخول، سجّل دخولك مرة تانية":"");render()}};
 function lmsg(t,ok){const l=$("lerr");if(!l)return;l.textContent=t;l.style.color=ok?"#12a150":"#e5484d"}
 window._bt=setTimeout(function(){var b=document.body;if(b.classList.contains("booting")){b.classList.add("slow");var l=document.getElementById("lerr");if(l){l.textContent="⏳ الاتصال بطيء أو مفيش إنترنت... لسه بحاول";l.style.color="#6b7689"}}},8000);
 function lerrTxt(e){const c=(e&&e.code)||"",M={"auth/invalid-email":"الإيميل غير صحيح","auth/missing-password":"اكتب الباسورد","auth/invalid-credential":"الإيميل أو الباسورد غلط","auth/wrong-password":"الباسورد غلط","auth/user-not-found":"مفيش حساب بالإيميل ده","auth/email-already-in-use":"الإيميل ده مسجل قبل كده، اضغط دخول","auth/weak-password":"الباسورد ضعيف، لازم 6 حروف أو أرقام على الأقل","auth/too-many-requests":"محاولات كتير، استنى شوية وحاول تاني","auth/network-request-failed":"مفيش اتصال بالإنترنت","auth/operation-not-allowed":"تسجيل الدخول بالإيميل مش مفعّل في Firebase"};return M[c]||("حصل خطأ: "+c)}
-async function doLogin(){const e=$("lem").value.trim(),p=$("lpw").value;if(!e||!p)return lmsg("اكتب الإيميل والباسورد");if(!window.CLOUD)return lmsg("الخدمة لسه بتحمّل، استنى ثانية");lmsg("⏳ جاري الدخول...",1);try{await CLOUD.login(e,p)}catch(x){lmsg(lerrTxt(x))}}
-async function doSignup(){const e=$("lem").value.trim(),p=$("lpw").value;if(!e||!p)return lmsg("اكتب الإيميل والباسورد");if(p.length<6)return lmsg("الباسورد لازم 6 حروف أو أرقام على الأقل");if(!window.CLOUD)return lmsg("الخدمة لسه بتحمّل، استنى ثانية");lmsg("⏳ جاري إنشاء الحساب...",1);try{await CLOUD.signup(e,p)}catch(x){lmsg(lerrTxt(x))}}
+async function doLogin(){const e=$("lem").value.trim(),p=$("lpw").value;if(!e||!p)return lmsg("اكتب الإيميل والباسورد");if(!window.CLOUD)return lmsg("الخدمة لسه بتحمّل، استنى ثانية");lmsg("⏳ جاري الدخول...",1);try{await CLOUD.login(e,p);await setPin(p)}catch(x){lmsg(lerrTxt(x))}}
+async function doSignup(){const e=$("lem").value.trim(),p=$("lpw").value;if(!e||!p)return lmsg("اكتب الإيميل والباسورد");if(p.length<6)return lmsg("الباسورد لازم 6 حروف أو أرقام على الأقل");if(!window.CLOUD)return lmsg("الخدمة لسه بتحمّل، استنى ثانية");lmsg("⏳ جاري إنشاء الحساب...",1);try{await CLOUD.signup(e,p);await setPin(p)}catch(x){lmsg(lerrTxt(x))}}
 async function doReset(){const e=$("lem").value.trim();if(!e)return lmsg("اكتب الإيميل الأول");if(!window.CLOUD)return lmsg("الخدمة لسه بتحمّل، استنى ثانية");try{await CLOUD.reset(e);lmsg("تم إرسال رابط تغيير الباسورد على إيميلك",1)}catch(x){lmsg(lerrTxt(x))}}
 
 // تنبيه واحد فقط عند الخروج (نافذة داخل التطبيق)
@@ -366,7 +369,7 @@ window.addEventListener("popstate",function(){
 </script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {getAuth,initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,browserSessionPersistence,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getAuth,initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,browserSessionPersistence,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut,EmailAuthProvider,reauthenticateWithCredential,updatePassword} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {initializeFirestore,getFirestore,persistentLocalCache,persistentMultipleTabManager,doc,setDoc,deleteDoc,collection,onSnapshot,getDocs} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyCV8GU9J2ykmmBcFaiIRId-NaTysa4-MZU",authDomain:"ahmed-6519e.firebaseapp.com",projectId:"ahmed-6519e",storageBucket:"ahmed-6519e.firebasestorage.app",messagingSenderId:"727484125260",appId:"1:727484125260:web:cfba5481ca4da08084e4e9"});
 let auth;try{auth=initializeAuth(app,{persistence:[indexedDBLocalPersistence,browserLocalPersistence,browserSessionPersistence]})}catch(e){auth=getAuth(app)}
@@ -378,6 +381,8 @@ window.CLOUD={
  login:(e,p)=>signInWithEmailAndPassword(auth,e,p),
  signup:(e,p)=>createUserWithEmailAndPassword(auth,e,p),
  reset:e=>sendPasswordResetEmail(auth,e),
+ async checkPw(p){const u=auth.currentUser;if(!u||!u.email)throw{code:"auth/no-user"};await reauthenticateWithCredential(u,EmailAuthProvider.credential(u.email,p))},
+ async changePw(o,n){const u=auth.currentUser;if(!u||!u.email)throw{code:"auth/no-user"};await reauthenticateWithCredential(u,EmailAuthProvider.credential(u.email,o));await updatePassword(u,n)},
  logout:()=>{try{localStorage.removeItem("cust_in")}catch(e){}return signOut(auth)},
  setSite:s=>setDoc(doc(db,...U("sites",s.id)),s),
  delSite:id=>deleteDoc(doc(db,...U("sites",id))),
@@ -464,10 +469,10 @@ function noteOpenAsk(id){const n=N.notes.find(x=>x.id===id);if(!n)return;
 function notePinAsk(kind,id){
  const T={open:"🔒 ملاحظة مقفولة",lock:"🔒 قفل الملاحظة",unlock:"🔓 إزالة القفل",del:"⚠️ حذف الملاحظة"}[kind];
  const M={open:"اكتب الرقم السري عشان تفتح الملاحظة.",lock:"اكتب الرقم السري عشان تقفل الملاحظة. هيتطلب الرقم كل ما تفتحها.",unlock:"اكتب الرقم السري عشان تشيل القفل.",del:"هتتحذف الملاحظة نهائيًا. اكتب الرقم السري للمتابعة."}[kind];
- dlg(`<h3>${T}</h3><div class="m" style="line-height:2">${M}</div><input id="npin" type="password" inputmode="numeric" maxlength="32" placeholder="الرقم السري"><div id="npe" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn${kind==="del"?" r":""}" onclick="notePinOk('${kind}','${id}')">تأكيد</button><button class="btn g" onclick="noteMenu('${id}')">رجوع</button></div>`);
+ dlg(`<h3>${T}</h3><div class="m" style="line-height:2">${M}</div><input id="npin" type="password" autocomplete="off" placeholder="الرقم السري (نفس باسورد الإيميل)"><div id="npe" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn${kind==="del"?" r":""}" onclick="notePinOk('${kind}','${id}')">تأكيد</button><button class="btn g" onclick="noteMenu('${id}')">رجوع</button></div>`);
  setTimeout(()=>{const x=$("npin");if(x)x.focus()},50)}
-function notePinOk(kind,id){const x=$("npin");if(!x)return;
- if(x.value!==PIN){$("npe").textContent="الرقم السري غير صحيح";x.value="";return}
+async function notePinOk(kind,id){const x=$("npin");if(!x)return;
+ if(!(await pinOk(x.value))){$("npe").textContent="الرقم السري غير صحيح";x.value="";return}
  const n=N.notes.find(z=>z.id===id);if(!n){$("dlg").close();return}
  $("dlg").close();
  if(kind==="open"){noteOpen(id);return}
