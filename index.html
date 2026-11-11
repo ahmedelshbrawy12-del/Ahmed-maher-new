@@ -269,7 +269,7 @@ async function doImport(rep){const d=IMPD;if(!d)return;let n=0;const t=Date.now(
  if(Array.isArray(d.notes)){const inn=d.notes.filter(y=>y&&typeof y==="object").map(y=>{const o=Object.assign({},y);o.id="n"+t+"_"+(n++);o.title=String(y.title||"");o.body=nClean(y.body);o.c=+y.c||t;o.u=+y.u||t;return o});N.notes=(rep?[]:N.notes).concat(inn);cloudNotes()}
  if(d.att&&Array.isArray(d.att.emps)){const x=atNorm(d.att);if(rep){AT=x}else{x.emps.forEach(e=>{if(!AT.emps.some(y=>y.id===e.id))AT.emps.push(e)});for(const k in x.rec)AT.rec[k]=Object.assign(AT.rec[k]||{},x.rec[k]);if(!AT.cfg)AT.cfg={};for(const k in x.cfg)AT.cfg[k]=Object.assign(AT.cfg[k]||{},x.cfg[k])}cloudAtt()}
  IMPD=null;$("dlg").close();view="main";render();alert("تم الاستيراد")}
-async function exportData(){const out={v:3,att:{seed:1,emps:AT.emps.map(e=>({id:e.id,name:e.name,grp:e.grp||""})),rec:JSON.parse(JSON.stringify(AT.rec)),cfg:JSON.parse(JSON.stringify(AT.cfg||{}))},notes:JSON.parse(JSON.stringify(N.notes||[])),personal:{balance:P.inc.map(e=>({desc:e.desc,amt:e.amt})),expenses:P.exp.map(e=>({desc:e.desc,amt:e.amt}))},sites:S.sites.map(s=>({name:s.name,custody:s.custody,expenses:s.expenses.map(e=>({desc:e.desc,amt:e.amt,img:IMG[e.id]||e.img||""}))}))};
+async function exportData(){const out={v:3,att:{seed:2,emps:AT.emps.map(e=>({id:e.id,name:e.name,grp:e.grp||""})),rec:JSON.parse(JSON.stringify(AT.rec)),cfg:JSON.parse(JSON.stringify(AT.cfg||{}))},notes:JSON.parse(JSON.stringify(N.notes||[])),personal:{balance:P.inc.map(e=>({desc:e.desc,amt:e.amt})),expenses:P.exp.map(e=>({desc:e.desc,amt:e.amt}))},sites:S.sites.map(s=>({name:s.name,custody:s.custody,expenses:s.expenses.map(e=>({desc:e.desc,amt:e.amt,img:IMG[e.id]||e.img||""}))}))};
  const blob=new Blob([JSON.stringify(out)],{type:"application/json"}),name="custody-backup-"+new Date().toISOString().slice(0,10)+".json";
  try{const file=new File([blob],name,{type:"application/json"});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return}}catch(e){if(e&&e.name==="AbortError")return}
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()}
@@ -551,16 +551,16 @@ const atKey=()=>"custatt_"+(ATUID||"");
 function atLocal(){try{localStorage.setItem(atKey(),JSON.stringify(AT))}catch(e){}}
 function atNorm(o){const r={emps:[],rec:{},cfg:{}};if(o&&Array.isArray(o.emps))r.emps=o.emps.filter(e=>e&&e.id).map(e=>({id:String(e.id),name:String(e.name||""),grp:String(e.grp||"")}));
  if(o&&o.rec&&typeof o.rec==="object")for(const k in o.rec){const m=o.rec[k];if(m&&typeof m==="object"){r.rec[k]={};for(const d in m)if(m[d])r.rec[k][d]=String(m[d])}}if(o&&o.cfg&&typeof o.cfg==="object")for(const k in o.cfg){const m=o.cfg[k];if(m&&typeof m==="object"){r.cfg[k]={};for(const ym in m){const c=m[ym]||{};r.cfg[k][ym]={rate:+c.rate||0,days:+c.days||0,trans:+c.trans||0}}}}
- r.seed=o&&o.seed?1:0;
+ r.seed=+(o&&o.seed)||0;
  return r}
 function attReset(u){ATUID=u?u.uid:null;AT={emps:[],rec:{},cfg:{}};ATE=null;if(u){try{AT=atNorm(JSON.parse(localStorage.getItem(atKey())||"null"))}catch(e){}}}
-function cloudAtt(){atLocal();if(!ME||!window.CLOUD||!CLOUD.setAtt)return;try{CLOUD.setAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed?1:0}).catch(cerr)}catch(e){cerr(e)}}
+function cloudAtt(){atLocal();if(!ME||!window.CLOUD||!CLOUD.setAtt)return;try{CLOUD.setAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed||0}).catch(cerr)}catch(e){cerr(e)}}
 window.onAtt=function(o){if(!ME)return;if(!o){if(AT.emps.length)cloudAtt();return}AT=atNorm(o);atLocal();if(String(view).indexOf("att")===0)render()};
 const atKy=(y,m,d)=>y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
 const atHue=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%360;return h};
 function atPlaces(){const o={};Object.values(AT.rec).forEach(m=>Object.values(m).forEach(v=>o[v]=1));return Object.keys(o)}
 function attRender(A,T){T.style.display="none";
- const e=AT.emps.find(x=>x.id===ATE);if(view!=="att"&&!e)view="att";if(view==="att"&&!AT.seed)attSeed();
+ const e=AT.emps.find(x=>x.id===ATE);if(view!=="att"&&!e)view="att";if(view==="att"&&!(AT.seed>=2))attSeed();
  let h="";
  if(view==="att"){
   h=`<div class="row noprint"><button class="btn g" onclick="view='main';render();scrollTo(0,0)">→ رجوع</button></div><h1>📅 الحضور والتمام</h1>
@@ -605,19 +605,22 @@ async function attXlsx(){const m=$("axm"),va=$("axf").value,vb=$("axt").value;
  const GS=atGrouped();const same=d0.getMonth()===d1.getMonth()&&d0.getFullYear()===d1.getFullYear();
  const wb=new EJ.Workbook(),ws=wb.addWorksheet("الحضور",{views:[{rightToLeft:true,state:"frozen",xSplit:1,ySplit:2}]});
  const fill=c=>({type:"pattern",pattern:"solid",fgColor:{argb:c}}),bd={style:"thin",color:{argb:"FF000000"}},B={top:bd,bottom:bd,left:bd,right:bd};
- const GR="FFD9D9D9",BL="FF5B9BD5",YL="FFFFFF00",C=days.length+2;
- ws.getColumn(1).width=34;for(let i=2;i<=days.length+1;i++)ws.getColumn(i).width=15;ws.getColumn(C).width=12;
+ const GR="FFD9D9D9",BL="FF5B9BD5",YL="FFFFFF00",D=days.length,C=D+7;
+ ws.getColumn(1).width=34;for(let i=2;i<=days.length+1;i++)ws.getColumn(i).width=15;for(let i=D+2;i<=C;i++)ws.getColumn(i).width=14;
  const st=(c,f,bold,sz)=>{c.fill=fill(f);c.border=B;c.font={bold:!!bold,size:sz||12,name:"Arial"};c.alignment={horizontal:"center",vertical:"middle",wrapText:true}};
  const r1=ws.getRow(1),r2=ws.getRow(2);r1.height=26;r2.height=26;
  st(r1.getCell(1),"FFFFFFFF");st(r2.getCell(1),BL,true,13);r2.getCell(1).value=GS[0].h||"الموظفين";
  days.forEach((d,i)=>{const fri=d.getDay()===5,c1=r1.getCell(i+2),c2=r2.getCell(i+2);
   c1.value=AT_DAY[(d.getDay()+1)%7];st(c1,fri?YL:GR);
   c2.value=same?d.getDate():d.getDate()+"/"+(d.getMonth()+1);st(c2,fri?YL:BL,true,13)});
- st(r1.getCell(C),"FFFFFFFF");st(r2.getCell(C),BL,true);r2.getCell(C).value="عدد الأيام";
- let RW=3;GS.forEach((g,gi)=>{if(gi>0){const hr=ws.getRow(RW++);hr.height=24;for(let k=1;k<=C;k++)st(hr.getCell(k),BL,true,13);hr.getCell(1).value=g.h||"موظفين"}g.l.forEach(e=>{const r=ws.getRow(RW++),rc=AT.rec[e.id]||{};r.height=34;let cnt=0;
+ ["عدد أيام البدلات","قيمة البدل","إجمالي البدلات","الانتقالات","مستحقات سابقة","الإجمالي"].forEach((h,i)=>{st(r1.getCell(D+2+i),"FFFFFFFF");const c=r2.getCell(D+2+i);c.value=h;st(c,BL,true)});const mk={};days.forEach(d=>{mk[d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")]=1});
+ let RW=3;GS.forEach((g,gi)=>{if(gi>0){const hr=ws.getRow(RW++);hr.height=24;for(let k=1;k<=C;k++)st(hr.getCell(k),BL,true,13);hr.getCell(1).value=g.h||"موظفين"}g.l.forEach(e=>{const r=ws.getRow(RW++),rc=AT.rec[e.id]||{};r.height=34;
   const c0=r.getCell(1);c0.value=e.name;st(c0,GR,true);
-  days.forEach((d,i)=>{const v=rc[atKy(d.getFullYear(),d.getMonth(),d.getDate())]||"",c=r.getCell(i+2);c.value=v;if(v)cnt++;st(c,d.getDay()===5?YL:"FFFFFFFF")});
-  const cc=r.getCell(C);cc.value=cnt;st(cc,"FFFFFFFF",true)})});
+  days.forEach((d,i)=>{const v=rc[atKy(d.getFullYear(),d.getMonth(),d.getDate())]||"",c=r.getCell(i+2);c.value=v;st(c,d.getDay()===5?YL:"FFFFFFFF")});
+  let dy=0,al=0,tr=0;Object.keys(mk).forEach(k=>{const cf=((AT.cfg||{})[e.id]||{})[k];if(cf){dy+=+cf.days||0;al+=(+cf.rate||0)*(+cf.days||0);tr+=+cf.trans||0}});
+  const q=n=>r.getCell(D+n),W="FFFFFFFF";
+  q(2).value=dy||null;q(3).value=dy?al/dy:null;q(4).value={formula:q(2).address+"*"+q(3).address,result:al};q(5).value=tr||null;q(6).value=null;q(7).value={formula:q(4).address+"+"+q(5).address+"+"+q(6).address,result:al+tr};
+  for(let n=2;n<=7;n++){st(q(n),W,n===7);q(n).numFmt="#,##0.##"}})});
  const buf=await wb.xlsx.writeBuffer(),type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",blob=new Blob([buf],{type}),name="حضور-"+va+"-إلى-"+vb+".xlsx";
  try{const file=new File([blob],name,{type});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});$("dlg").close();return}}catch(e){if(e&&e.name==="AbortError")return}
  const l=document.createElement("a");l.href=URL.createObjectURL(blob);l.download=name;document.body.appendChild(l);l.click();l.remove();$("dlg").close()}
@@ -626,9 +629,14 @@ function atGroups(){return atGrouped().map(g=>g.n).filter(Boolean)}
 function atNm(s){return String(s).replace(/[\u064B-\u065F\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim()}
 const AT_SEED=[["مهندسين",["محمد اسماعيل عبد العزيز","احمد علي عز الدين","كامل إسلام محمد كامل","أحمد ماهر الشبراوي عبده","محمود رمضان عبد الحكيم","م ايمن هاشم مكتب فني"]],
 ["فنيين",["محمد مصطفى محمد يوسف","أحمد السيد سويلم أحمد","محمد إبراهيم عبد اللاهي حسين","محمد نجيب فوزي مفتاح","محمود السيد محمد خليل","شريف عبد المنعم عبد العزيز","شعبان عطيه محمد عطيه","عبد الله السيد علي محمد","احمد العزب السباعي","مصطفى علي مصطفى محمد بلح","احمد محمد السيد موسى السيد","محمد احمد محمد إبراهيم","ابراهيم صلاح خفاجه","علي محمد علي بسيوني"]]];
-function attSeed(){let i=0;AT_SEED.forEach(([g,l])=>l.forEach(n=>{i++;const k=atNm(n),w=k.split(" ").length;
- const ex=AT.emps.find(e=>{const q=atNm(e.name),qw=q.split(" ").length;return q===k||(qw>=3&&k.indexOf(q+" ")===0)||(w>=3&&q.indexOf(k+" ")===0)});
- if(ex){if(!ex.grp)ex.grp=g}else AT.emps.push({id:"sd"+i,name:n,grp:g})}));AT.seed=1;cloudAtt()}
+function atSame(a,b){const q=atNm(a),k=atNm(b),qw=q.split(" ").length,kw=k.split(" ").length;return q===k||(qw>=3&&k.indexOf(q+" ")===0)||(kw>=3&&q.indexOf(k+" ")===0)}
+function attSeed(){const add=!AT.seed,pos=[];let i=0;
+ AT_SEED.forEach(([g,l])=>l.forEach(n=>{i++;let ex=AT.emps.find(e=>atSame(e.name,n));
+  if(!ex&&add){ex={id:"sd"+i,name:n,grp:g};AT.emps.push(ex)}
+  if(ex){if(add&&!ex.grp)ex.grp=g;pos.push([ex,i])}}));
+ const rank=new Map(pos);
+ AT.emps=AT.emps.map((e,j)=>[e,rank.has(e)?rank.get(e):1e6+j]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+ AT.seed=2;cloudAtt()}
 function attEdit(id){const e=AT.emps.find(x=>x.id===id);if(!e)return;
  dlg(`<h3>تعديل الموظف</h3><input id="aen" value="${esc(e.name)}" placeholder="الاسم"><input id="aeg" list="atgl2" value="${esc(e.grp||"")}" placeholder="المجموعة (مثال: مهندسين)"><datalist id="atgl2">${atGroups().map(g=>`<option value="${esc(g)}">`).join("")}</datalist><div class="row" style="margin-top:8px"><button class="btn" onclick="attEditSave('${id}')">حفظ</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 function attEditSave(id){const e=AT.emps.find(x=>x.id===id),n=$("aen").value.trim();if(!e||!n)return;e.name=n;e.grp=$("aeg").value.trim();cloudAtt();$("dlg").close();render()}
