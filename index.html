@@ -575,8 +575,8 @@ function attRender(A,T){T.style.display="none";
  }else{
   const y=ATY,m=ATM,n=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()+1)%7,r=AT.rec[e.id]||{};
   const cf=((AT.cfg||{})[e.id]||{})[y+"-"+String(m+1).padStart(2,"0")]||{},al=(+cf.rate||0)*(+cf.days||0);
-  const lb='font-size:12px;margin:0',ip='width:150px;margin:0;padding:6px 8px';
-  h=`<div class="noprint" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><button class="btn g" onclick="view='attyear';render()">→ رجوع</button><div style="display:flex;flex-direction:column;gap:4px"><label class="m" style="${lb}">قيمة البدل</label><input id="atr" type="number" inputmode="decimal" style="${ip}" value="${cf.rate||""}" oninput="attCfg()"><label class="m" style="${lb}">عدد أيام البدل</label><input id="atd" type="number" inputmode="decimal" style="${ip}" value="${cf.days||""}" oninput="attCfg()"></div></div><h1 style="font-size:20px">${esc(e.name)} — ${AT_MON[m]} ${y}</h1>
+  const lb='font-size:13px;margin:0;white-space:nowrap;min-width:68px',ip='width:100px;margin:0;padding:6px 8px';
+  h=`<div class="noprint" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><button class="btn g" onclick="view='attyear';render()">→ رجوع</button><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">قيمة البدل</label><input id="atr" type="number" inputmode="decimal" style="${ip}" value="${cf.rate||""}" oninput="attCfg()"></div><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">عدد الأيام</label><input id="atd" type="number" inputmode="decimal" style="${ip}" value="${cf.days||""}" oninput="attCfg()"></div></div></div><h1 style="font-size:20px">${esc(e.name)} — ${AT_MON[m]} ${y}</h1>
   <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;direction:rtl">`+
   AT_DAY.map(d=>`<div class="m" style="text-align:center;font-size:11px">${d}</div>`).join("")+
   '<div></div>'.repeat(off)+
