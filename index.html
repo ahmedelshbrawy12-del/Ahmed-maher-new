@@ -80,7 +80,7 @@ body.locked::before{display:none!important}
 #lhint{background:#eef2ff;color:#283580;border:1px dashed #283580;border-radius:10px;padding:8px 12px;font-size:14px;line-height:1.8;margin-top:8px;max-width:320px;width:100%}
 #lhint b{font-size:18px;letter-spacing:3px}
 .nt{font-size:18px!important;font-weight:700}
-.sw{display:inline-block;width:30px;height:30px;border-radius:50%;border:2px solid var(--bd);margin:3px;vertical-align:middle;cursor:pointer}
+.sw{display:inline-block;width:30px;height:30px;border-radius:50%;border:2px solid #8893a5;margin:3px;vertical-align:middle;cursor:pointer}
 .nrow{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin:6px 0}.nrow>span{font-size:13px;color:var(--mut);min-width:70px}
 .nb{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;margin:2px;cursor:pointer}
 .ned{min-height:220px;border:1px solid var(--bd);border-radius:10px;padding:10px;background:var(--bg);color:var(--tx);line-height:1.9;outline:0;margin:8px 0;overflow-wrap:anywhere}
@@ -348,7 +348,7 @@ onAuthStateChanged(auth,u=>{uid=u?u.uid:null;window.onAuth(u)});
 <script id="notes-mod">
 // ===== قسم ملاحظاتي (مستقل) =====
 let NID=null,NT=null,NUID=null,NTC="",NSEL=null;
-const NTX=["#e5484d","#12a150","#1f6feb","#f59f00","#9c36b5","#0c8599"],NHL=["#fff3a3","#b7f5c8","#ffd0d6","#cfe4ff"];
+const NTX=["#e5484d","#000000","#ffffff","#facc15"],NHL=["#e5484d","#000000","#ffffff","#facc15"];
 const nKey=()=>"custnotes_"+(NUID||"");
 function nLocal(){try{localStorage.setItem(nKey(),JSON.stringify(N))}catch(e){}}
 function notesReset(u){clearTimeout(NT);NUID=u?u.uid:null;N={notes:[]};NID=null;NSEL=null;
@@ -373,12 +373,14 @@ function notesRender(A,T){T.style.display="none";
  if(view==="note"){const n=N.notes.find(x=>x.id===NID);if(!n){view="notes";return notesRender(A,T)}
   if(A.dataset.ne===NID&&$("ned"))return;A.dataset.ne=NID;NTC=n.tc||"";
   const sw=(arr,fn)=>arr.map(c=>`<i class="sw" style="background:${c}" onmousedown="event.preventDefault()" onclick="${fn}('${c}')"></i>`).join("");
-  A.innerHTML=`<div class="row"><button class="btn g" onclick="notesBack()">→ رجوع</button><button class="btn" onclick="noteSave(1)">💾 حفظ</button></div><h1>📝 ملاحظة</h1>
-  <div class="card"><input id="nt" class="nt" placeholder="عنوان الملاحظة" value="${esc(n.title||"")}" style="color:${NTC||"inherit"}" oninput="noteDirty()">
+  A.innerHTML=`<div class="row"><button class="btn g" onclick="notesBack()">→ رجوع</button><button class="btn" onclick="noteSave(1)">💾 حفظ</button><button class="btn g" onclick="var t=document.getElementById('ntools');t.style.display=t.style.display==='none'?'block':'none'">🎨 تعديل التنسيق</button></div><h1>📝 ملاحظة</h1>
+  <div id="ntools" class="card" style="display:none">
   <div class="nrow"><span>لون العنوان</span>${sw(NTX,"noteTitleColor")}<button class="nb" onclick="noteTitleColor('')">افتراضي</button></div>
   <div class="nrow"><button class="nb" onmousedown="event.preventDefault()" onclick="nCmd('bold')"><b>B</b> عريض</button><button class="nb" onmousedown="event.preventDefault()" onclick="nCmd('insertUnorderedList')">• قائمة نقطية</button><button class="nb" onmousedown="event.preventDefault()" onclick="nCmd('insertOrderedList')">١. قائمة مرقمة</button></div>
   <div class="nrow"><span>لون النص</span>${sw(NTX,"nColor")}<button class="nb" onmousedown="event.preventDefault()" onclick="nCmd('removeFormat')">مسح التنسيق</button></div>
   <div class="nrow"><span>تمييز</span>${sw(NHL,"nHl")}<button class="nb" onmousedown="event.preventDefault()" onclick="nHl('transparent')">إزالة</button></div>
+  </div>
+  <div class="card"><input id="nt" class="nt" placeholder="عنوان الملاحظة" value="${esc(n.title||"")}" style="color:${NTC||"inherit"}" oninput="noteDirty()">
   <div id="ned" class="ned" contenteditable="true" dir="auto" oninput="noteDirty()"></div>
   <div class="m">أُنشئت: ${nFmt(n.c)}<br>آخر تعديل: <span id="nds">${nFmt(n.u)}</span></div><div id="nst" class="m" style="min-height:20px;margin-top:4px"></div></div>
   <button class="btn r" onclick="noteDel()">🗑️ حذف الملاحظة</button>`;
