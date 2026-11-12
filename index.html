@@ -617,7 +617,7 @@ async function attXlsx(){const m=$("axm"),va=$("axf").value,vb=$("axt").value;
  const GS=atGrouped();const same=d0.getMonth()===d1.getMonth()&&d0.getFullYear()===d1.getFullYear();
  const wb=new EJ.Workbook(),ws=wb.addWorksheet("الحضور",{views:[{rightToLeft:true,state:"frozen",xSplit:1,ySplit:2}]});
  const fill=c=>({type:"pattern",pattern:"solid",fgColor:{argb:c}}),bd={style:"thin",color:{argb:"FF000000"}},B={top:bd,bottom:bd,left:bd,right:bd};
- const GR="FFD9D9D9",BL="FF5B9BD5",YL="FFFFFF00",D=days.length,C=D+7;
+ const GR="FFD9D9D9",BL="FF5B9BD5",YL="FFFFFF00",LB="FF9DC3E6",PK="FFFFC7CE",D=days.length,C=D+7;
  ws.getColumn(1).width=34;for(let i=2;i<=days.length+1;i++)ws.getColumn(i).width=15;for(let i=D+2;i<=C;i++)ws.getColumn(i).width=14;
  const st=(c,f,bold,sz)=>{c.fill=fill(f);c.border=B;c.font={bold:!!bold,size:sz||12,name:"Arial"};c.alignment={horizontal:"center",vertical:"middle",wrapText:true}};
  const r1=ws.getRow(1),r2=ws.getRow(2);r1.height=26;r2.height=26;
@@ -625,14 +625,14 @@ async function attXlsx(){const m=$("axm"),va=$("axf").value,vb=$("axt").value;
  days.forEach((d,i)=>{const fri=d.getDay()===5,c1=r1.getCell(i+2),c2=r2.getCell(i+2);
   c1.value=AT_DAY[(d.getDay()+1)%7];st(c1,fri?YL:GR);
   c2.value=same?d.getDate():d.getDate()+"/"+(d.getMonth()+1);st(c2,fri?YL:BL,true,13)});
- ["عدد أيام البدلات","قيمة البدل","إجمالي البدلات","الانتقالات","مستحقات سابقة","الإجمالي"].forEach((h,i)=>{st(r1.getCell(D+2+i),"FFFFFFFF");const c=r2.getCell(D+2+i);c.value=h;st(c,BL,true)});const mk={};days.forEach(d=>{mk[atPK(d)]=1});
+ ["قيمة الـ overtime","عدد الأيام المستحق فيها بدل","قيمة البدلات","الانتقالات","مستحقات سابقة","الإجمالي"].forEach((h,i)=>{const c=r1.getCell(D+2+i);c.value=h;st(c,GR,true);st(r2.getCell(D+2+i),LB,true)});r1.height=52;const mk={};days.forEach(d=>{mk[atPK(d)]=1});
  let RW=3;GS.forEach((g,gi)=>{if(gi>0){const hr=ws.getRow(RW++);hr.height=24;for(let k=1;k<=C;k++)st(hr.getCell(k),BL,true,13);hr.getCell(1).value=g.h||"موظفين"}g.l.forEach(e=>{const r=ws.getRow(RW++),rc=AT.rec[e.id]||{};r.height=34;
   const c0=r.getCell(1);c0.value=e.name;st(c0,GR,true);
   days.forEach((d,i)=>{const v=rc[atKy(d.getFullYear(),d.getMonth(),d.getDate())]||"",c=r.getCell(i+2);c.value=v;st(c,d.getDay()===5?YL:"FFFFFFFF")});
   let dy=0,al=0,tr=0;Object.keys(mk).forEach(k=>{const cf=((AT.cfg||{})[e.id]||{})[k];if(cf){dy+=+cf.days||0;al+=(+cf.rate||0)*(+cf.days||0);tr+=+cf.trans||0}});
   const q=n=>r.getCell(D+n),W="FFFFFFFF";
-  q(2).value=dy||null;q(3).value=dy?al/dy:null;q(4).value={formula:q(2).address+"*"+q(3).address,result:al};q(5).value=tr||null;q(6).value=null;q(7).value={formula:q(4).address+"+"+q(5).address+"+"+q(6).address,result:al+tr};
-  for(let n=2;n<=7;n++){st(q(n),W,n===7);q(n).numFmt="#,##0.##"}})});
+  q(2).value=null;q(3).value=dy||null;q(4).value=al||null;q(5).value=tr||null;q(6).value=null;q(7).value={formula:q(2).address+"+"+q(4).address+"+"+q(5).address+"+"+q(6).address,result:al+tr};
+  for(let n=2;n<=7;n++){st(q(n),n===6?PK:W,n===7);q(n).numFmt="#,##0.##;-#,##0.##;"}})});
  const buf=await wb.xlsx.writeBuffer(),type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",blob=new Blob([buf],{type}),name="حضور-"+va+"-إلى-"+vb+".xlsx";
  try{const file=new File([blob],name,{type});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});$("dlg").close();return}}catch(e){if(e&&e.name==="AbortError")return}
  const l=document.createElement("a");l.href=URL.createObjectURL(blob);l.download=name;document.body.appendChild(l);l.click();l.remove();$("dlg").close()}
