@@ -366,7 +366,8 @@ window.addEventListener("popstate",function(){
  if(view==="sreport"){view="site";render();scrollTo(0,0);return}
  if(view==="site"||view==="report"){view="home";cur=null;render();scrollTo(0,0);return}
  if(view==="note"){notesBack();scrollTo(0,0);return}
- if(view==="attmonth"){view="attyear";render();scrollTo(0,0);return}
+ if(view==="attmonth"){view="attper";render();scrollTo(0,0);return}
+ if(view==="attper"){view="attyear";render();scrollTo(0,0);return}
  if(view==="attyear"){view="att";render();scrollTo(0,0);return}
  if(view==="att"){view="main";render();scrollTo(0,0);return}
  if(view==="home"||view==="personal"||view==="notes"){view="main";render();scrollTo(0,0);return}
@@ -544,13 +545,13 @@ addEventListener("pagehide",()=>noteSave(0));
 </script>
 <script id="att-mod">
 // ===== قسم الحضور والتمام =====
-let ATT=null,ATE=null,ATY=new Date().getFullYear(),ATM=0,ATUID=null;
+let ATP=1,ATT=null,ATE=null,ATY=new Date().getFullYear(),ATM=0,ATUID=null;
 const AT_MON=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 const AT_DAY=["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"];
 const atKey=()=>"custatt_"+(ATUID||"");
 function atLocal(){try{localStorage.setItem(atKey(),JSON.stringify(AT))}catch(e){}}
 function atNorm(o){const r={emps:[],rec:{},cfg:{}};if(o&&Array.isArray(o.emps))r.emps=o.emps.filter(e=>e&&e.id).map(e=>({id:String(e.id),name:String(e.name||""),grp:String(e.grp||"")}));
- if(o&&o.rec&&typeof o.rec==="object")for(const k in o.rec){const m=o.rec[k];if(m&&typeof m==="object"){r.rec[k]={};for(const d in m)if(m[d])r.rec[k][d]=String(m[d])}}if(o&&o.cfg&&typeof o.cfg==="object")for(const k in o.cfg){const m=o.cfg[k];if(m&&typeof m==="object"){r.cfg[k]={};for(const ym in m){const c=m[ym]||{};r.cfg[k][ym]={rate:+c.rate||0,days:+c.days||0,trans:+c.trans||0}}}}
+ if(o&&o.rec&&typeof o.rec==="object")for(const k in o.rec){const m=o.rec[k];if(m&&typeof m==="object"){r.rec[k]={};for(const d in m)if(m[d])r.rec[k][d]=String(m[d])}}if(o&&o.cfg&&typeof o.cfg==="object")for(const k in o.cfg){const m=o.cfg[k];if(m&&typeof m==="object"){r.cfg[k]={};for(const ym in m){const c=m[ym]||{};r.cfg[k][/^\d{4}-\d{2}$/.test(ym)?ym+"-1":ym]={rate:+c.rate||0,days:+c.days||0,trans:+c.trans||0}}}}
  r.seed=+(o&&o.seed)||0;
  return r}
 function attReset(u){ATUID=u?u.uid:null;AT={emps:[],rec:{},cfg:{}};ATE=null;if(u){try{AT=atNorm(JSON.parse(localStorage.getItem(atKey())||"null"))}catch(e){}}}
@@ -559,6 +560,10 @@ window.onAtt=function(o){if(!ME)return;if(!o){if(AT.emps.length)cloudAtt();retur
 const atKy=(y,m,d)=>y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
 const atHue=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%360;return h};
 function atPlaces(){const o={};Object.values(AT.rec).forEach(m=>Object.values(m).forEach(v=>o[v]=1));return Object.keys(o)}
+const atFm=d=>atKy(d.getFullYear(),d.getMonth(),d.getDate());
+function atP(y,m,p){return p===1?[new Date(y,m,11),new Date(y,m,25)]:[new Date(y,m,26),new Date(y,m+1,10)]}
+function atPK(d){const x=d.getDate();let y=d.getFullYear(),m=d.getMonth();if(x<=10){const q=new Date(y,m-1,1);y=q.getFullYear();m=q.getMonth()}return y+"-"+String(m+1).padStart(2,"0")+"-"+(x>=11&&x<=25?1:2)}
+function atLab(y,m,p){const [a,b]=atP(y,m,p);return p===1?`11 ← 25 ${AT_MON[m]}`:`26 ${AT_MON[a.getMonth()]} ← 10 ${AT_MON[b.getMonth()]}`}
 function attRender(A,T){T.style.display="none";
  const e=AT.emps.find(x=>x.id===ATE);if(view!=="att"&&!e)view="att";if(view==="att"&&!(AT.seed>=2))attSeed();
  let h="";
@@ -572,28 +577,35 @@ function attRender(A,T){T.style.display="none";
   <div style="display:flex;align-items:center;justify-content:center;gap:20px;font-size:26px;font-weight:700;margin:8px 0 16px"><button class="btn g" onclick="ATY--;render()">›</button><span>${ATY}</span><button class="btn g" onclick="ATY++;render()">‹</button></div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;direction:rtl">`+
   AT_MON.map((n,i)=>{const c=Object.keys(r).filter(k=>k.indexOf(ATY+"-"+String(i+1).padStart(2,"0")+"-")===0).length;
-   return `<button class="btn g" style="width:100%;margin:0;padding:18px 4px" onclick="ATM=${i};view='attmonth';render();scrollTo(0,0)">${n}${c?`<div class="m" style="font-size:11px">${c} يوم</div>`:""}</button>`}).join("")+`</div>`;
+   return `<button class="btn g" style="width:100%;margin:0;padding:18px 4px" onclick="ATM=${i};view='attper';render();scrollTo(0,0)">${n}${c?`<div class="m" style="font-size:11px">${c} يوم</div>`:""}</button>`}).join("")+`</div>`;
+ }else if(view==="attper"){
+  const r=AT.rec[e.id]||{};
+  h=`<div class="row noprint"><button class="btn g" onclick="view='attyear';render()">→ رجوع</button></div><h1>${esc(e.name)}</h1><div class="m" style="margin-bottom:10px">${AT_MON[ATM]} ${ATY}</div><div style="display:grid;gap:10px">`+
+  [1,2].map(p=>{const [a,b]=atP(ATY,ATM,p),sa=atFm(a),sb=atFm(b),c=Object.keys(r).filter(k=>k>=sa&&k<=sb).length;
+   return `<button class="btn g" style="width:100%;margin:0;padding:22px 8px;font-size:16px" onclick="ATP=${p};view='attmonth';render();scrollTo(0,0)">${atLab(ATY,ATM,p)}<div class="m" style="font-size:12px">${c} يوم مسجل</div></button>`}).join("")+`</div>`;
  }else{
-  const y=ATY,m=ATM,n=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()+1)%7,r=AT.rec[e.id]||{};
-  const cf=((AT.cfg||{})[e.id]||{})[y+"-"+String(m+1).padStart(2,"0")]||{},al=(+cf.rate||0)*(+cf.days||0);
+  const y=ATY,m=ATM,[pa,pb]=atP(y,m,ATP),ds=[];for(let d=new Date(pa);d<=pb;d.setDate(d.getDate()+1))ds.push(new Date(d));
+  const off=(pa.getDay()+1)%7,r=AT.rec[e.id]||{};
+  const cf=((AT.cfg||{})[e.id]||{})[y+"-"+String(m+1).padStart(2,"0")+"-"+ATP]||{},al=(+cf.rate||0)*(+cf.days||0);
   const lb='font-size:13px;margin:0;white-space:nowrap;min-width:68px',ip='width:100px;margin:0;padding:6px 8px';
-  h=`<div class="noprint" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><button class="btn g" onclick="view='attyear';render()">→ رجوع</button><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">قيمة البدل</label><input id="atr" type="number" inputmode="decimal" style="${ip}" value="${cf.rate||""}" oninput="attCfg()"></div><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">عدد الأيام</label><input id="atd" type="number" inputmode="decimal" style="${ip}" value="${cf.days||""}" oninput="attCfg()"></div></div></div><h1 style="font-size:20px">${esc(e.name)} — ${AT_MON[m]} ${y}</h1>
+  h=`<div class="noprint" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><button class="btn g" onclick="view='attper';render()">→ رجوع</button><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">قيمة البدل</label><input id="atr" type="number" inputmode="decimal" style="${ip}" value="${cf.rate||""}" oninput="attCfg()"></div><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">عدد الأيام</label><input id="atd" type="number" inputmode="decimal" style="${ip}" value="${cf.days||""}" oninput="attCfg()"></div></div></div><h1 style="font-size:20px">${esc(e.name)} — ${atLab(y,m,ATP)} ${pa.getFullYear()===pb.getFullYear()?y:pa.getFullYear()+"/"+pb.getFullYear()}</h1><div class="noprint" style="display:flex;gap:8px;margin:8px 0">${[1,2].map(p=>`<button class="btn ${p===ATP?"":"g"}" style="margin:0;padding:6px 14px;font-size:13px" onclick="ATP=${p};render()">${p===1?"11 ← 25":"26 ← 10"}</button>`).join("")}</div>
   <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;direction:rtl">`+
   AT_DAY.map(d=>`<div class="m" style="text-align:center;font-size:11px">${d}</div>`).join("")+
   '<div></div>'.repeat(off)+
-  Array.from({length:n},(_,i)=>{const d=i+1,v=r[atKy(y,m,d)],fri=(off+i)%7===6;
-   return `<div onclick="attDay(${d})" style="cursor:pointer;min-height:62px;padding:3px;border-radius:8px;border:1px solid var(--bd);background:${v?`hsl(${atHue(v)} 55% 50% / .28)`:"var(--card)"};font-size:10.5px;text-align:center;line-height:1.25;overflow:hidden;word-break:break-word"><b style="font-size:13px;${fri?"color:var(--bad)":""}">${d}</b><div>${v?esc(v):""}</div></div>`}).join("")+
+  ds.map((dt,i)=>{const d=dt.getDate(),k=atFm(dt),v=r[k],fri=dt.getDay()===5,fm=i===0||d===1;
+   return `<div onclick="attDay('${k}')" style="cursor:pointer;min-height:62px;padding:3px;border-radius:8px;border:1px solid var(--bd);background:${v?`hsl(${atHue(v)} 55% 50% / .28)`:"var(--card)"};font-size:10.5px;text-align:center;line-height:1.25;overflow:hidden;word-break:break-word"><b style="font-size:13px;${fri?"color:var(--bad)":""}">${d}</b>${fm?`<span class="m" style="font-size:9px"> ${AT_MON[dt.getMonth()]}</span>`:""}<div>${v?esc(v):""}</div></div>`}).join("")+
   `</div><div class="m" style="margin-top:10px">اضغط على أي يوم لتسجيل مكان الموظف.</div>
   <div style="display:flex;gap:8px;margin-top:14px"><div class="card" style="flex:1;margin:0;padding:10px;display:flex;align-items:center;gap:6px;min-width:0"><span class="m" style="font-size:13px;white-space:nowrap">إجمالي البدلات</span><b id="ata" style="font-size:15px">${f(al)}</b></div><div class="card" style="flex:1;margin:0;padding:10px;display:flex;align-items:center;gap:6px;min-width:0"><span class="m" style="font-size:13px;white-space:nowrap">الانتقالات</span><input id="att_t" type="number" inputmode="decimal" style="flex:1;min-width:0;width:100%;margin:0;padding:6px 8px" value="${cf.trans||""}" oninput="attCfg()"></div></div>
   <div class="card" style="margin-top:10px;text-align:center"><div class="m">إجمالي المستحق</div><b id="ats" style="font-size:24px" class="ok">${f(al+(+cf.trans||0))}</b></div>`;
  }
  A.innerHTML=h}
-function attCfg(){const r=+$("atr").value||0,d=+$("atd").value||0,tr=+$("att_t").value||0,k=ATY+"-"+String(ATM+1).padStart(2,"0");
+function attCfg(){const r=+$("atr").value||0,d=+$("atd").value||0,tr=+$("att_t").value||0,k=ATY+"-"+String(ATM+1).padStart(2,"0")+"-"+ATP;
  if(!AT.cfg)AT.cfg={};if(!AT.cfg[ATE])AT.cfg[ATE]={};AT.cfg[ATE][k]={rate:r,days:d,trans:tr};
  $("ata").textContent=f(r*d);$("ats").textContent=f(r*d+tr);atLocal();clearTimeout(ATT);ATT=setTimeout(cloudAtt,700)}
 function attXlsDlg(){if(!AT.emps.length)return alert("أضف موظفين الأول");
- const n=new Date(),p=x=>String(x).padStart(2,"0"),fm=d=>d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
- dlg(`<h3>📊 تصدير الحضور إلى إكسل</h3><div class="m" style="margin-bottom:6px">اختار الفترة اللي عايزها لكل الموظفين</div><div class="m">من</div><input id="axf" type="date" value="${fm(new Date(n.getFullYear(),n.getMonth(),1))}"><div class="m" style="margin-top:6px">إلى</div><input id="axt" type="date" value="${fm(new Date(n.getFullYear(),n.getMonth()+1,0))}"><div id="axm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn" onclick="attXlsx()">تصدير</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
+ const n=new Date(),dd=n.getDate();let m=n.getMonth(),p=1;if(dd<=10){m--;p=2}else if(dd>=26)p=2;const q=new Date(n.getFullYear(),m,1),y=q.getFullYear();m=q.getMonth();const [a,b]=atP(y,m,p);
+ dlg(`<h3>📊 تصدير الحضور إلى إكسل</h3><div class="m" style="margin-bottom:6px">اختار الشهر والفترة، أو حدد التواريخ بنفسك</div><input id="axmo" type="month" value="${y}-${String(m+1).padStart(2,"0")}"><div class="row" style="margin-top:6px"><button class="btn g" onclick="attXP(1)">11 ← 25</button><button class="btn g" onclick="attXP(2)">26 ← 10</button></div><div class="m" style="margin-top:8px">من</div><input id="axf" type="date" value="${atFm(a)}"><div class="m" style="margin-top:6px">إلى</div><input id="axt" type="date" value="${atFm(b)}"><div id="axm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn" onclick="attXlsx()">تصدير</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
+function attXP(p){const v=$("axmo").value;if(!v)return;const [y,m]=v.split("-").map(Number),[a,b]=atP(y,m-1,p);$("axf").value=atFm(a);$("axt").value=atFm(b)}
 function attLoadEJ(){return new Promise((ok,no)=>{if(window.ExcelJS)return ok(window.ExcelJS);const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js";s.onload=()=>window.ExcelJS?ok(window.ExcelJS):no();s.onerror=no;document.head.appendChild(s)})}
 async function attXlsx(){const m=$("axm"),va=$("axf").value,vb=$("axt").value;
  if(!va||!vb)return m.textContent="حدد تاريخ البداية والنهاية";
@@ -613,7 +625,7 @@ async function attXlsx(){const m=$("axm"),va=$("axf").value,vb=$("axt").value;
  days.forEach((d,i)=>{const fri=d.getDay()===5,c1=r1.getCell(i+2),c2=r2.getCell(i+2);
   c1.value=AT_DAY[(d.getDay()+1)%7];st(c1,fri?YL:GR);
   c2.value=same?d.getDate():d.getDate()+"/"+(d.getMonth()+1);st(c2,fri?YL:BL,true,13)});
- ["عدد أيام البدلات","قيمة البدل","إجمالي البدلات","الانتقالات","مستحقات سابقة","الإجمالي"].forEach((h,i)=>{st(r1.getCell(D+2+i),"FFFFFFFF");const c=r2.getCell(D+2+i);c.value=h;st(c,BL,true)});const mk={};days.forEach(d=>{mk[d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")]=1});
+ ["عدد أيام البدلات","قيمة البدل","إجمالي البدلات","الانتقالات","مستحقات سابقة","الإجمالي"].forEach((h,i)=>{st(r1.getCell(D+2+i),"FFFFFFFF");const c=r2.getCell(D+2+i);c.value=h;st(c,BL,true)});const mk={};days.forEach(d=>{mk[atPK(d)]=1});
  let RW=3;GS.forEach((g,gi)=>{if(gi>0){const hr=ws.getRow(RW++);hr.height=24;for(let k=1;k<=C;k++)st(hr.getCell(k),BL,true,13);hr.getCell(1).value=g.h||"موظفين"}g.l.forEach(e=>{const r=ws.getRow(RW++),rc=AT.rec[e.id]||{};r.height=34;
   const c0=r.getCell(1);c0.value=e.name;st(c0,GR,true);
   days.forEach((d,i)=>{const v=rc[atKy(d.getFullYear(),d.getMonth(),d.getDate())]||"",c=r.getCell(i+2);c.value=v;st(c,d.getDay()===5?YL:"FFFFFFFF")});
@@ -644,13 +656,14 @@ function attAdd(){const v=$("atn").value.trim();if(!v)return;AT.emps.push({id:"a
 function attRen(id){const e=AT.emps.find(x=>x.id===id);if(!e)return;const n=prompt("الاسم الجديد",e.name);if(n&&n.trim()){e.name=n.trim();cloudAtt();render()}}
 function attDel(id){if(!confirm("حذف الموظف وكل سجلات حضوره؟"))return;AT.emps=AT.emps.filter(x=>x.id!==id);delete AT.rec[id];if(AT.cfg)delete AT.cfg[id];cloudAtt();render()}
 function attOpen(id){ATE=id;ATY=new Date().getFullYear();view="attyear";render();scrollTo(0,0)}
-function attDay(d){const n=new Date(ATY,ATM+1,0).getDate(),cur=(AT.rec[ATE]||{})[atKy(ATY,ATM,d)]||"";
- dlg(`<h3>يوم ${d} ${AT_MON[ATM]} ${ATY}</h3><input id="atp" list="atl" placeholder="المكان (مثال: مطار العريش)" value="${esc(cur)}"><datalist id="atl">${atPlaces().map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
- <div class="m" style="margin-top:8px">تطبيق على الأيام من - إلى</div><div class="row"><input id="atf" type="number" inputmode="numeric" min="1" max="${n}" value="${d}"><input id="att2" type="number" inputmode="numeric" min="1" max="${n}" value="${d}"></div>
+function attDay(k){const cur=(AT.rec[ATE]||{})[k]||"",[pa,pb]=atP(ATY,ATM,ATP),mn=atFm(pa),mx=atFm(pb);
+ dlg(`<h3>${k.split("-").reverse().join("/")}</h3><input id="atp" list="atl" placeholder="المكان (مثال: مطار العريش)" value="${esc(cur)}"><datalist id="atl">${atPlaces().map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
+ <div class="m" style="margin-top:8px">تطبيق على الأيام من - إلى</div><div class="row"><input id="atf" type="date" min="${mn}" max="${mx}" value="${k}"><input id="att2" type="date" min="${mn}" max="${mx}" value="${k}"></div>
  <div class="row" style="margin-top:8px"><button class="btn" onclick="attSave(1)">حفظ</button><button class="btn r" onclick="attSave(0)">مسح</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
-function attSave(set){const v=$("atp").value.trim(),n=new Date(ATY,ATM+1,0).getDate(),f=Math.max(1,parseInt($("atf").value)||1),t=Math.min(n,parseInt($("att2").value)||f);
+function attSave(set){const v=$("atp").value.trim(),[pa,pb]=atP(ATY,ATM,ATP),mn=atFm(pa),mx=atFm(pb);
+ let f=$("atf").value,t=$("att2").value||f;if(!f)return;if(f<mn)f=mn;if(t>mx)t=mx;if(t<f)t=f;
  if(set&&!v)return;if(!AT.rec[ATE])AT.rec[ATE]={};
- for(let d=f;d<=t;d++){const k=atKy(ATY,ATM,d);if(set)AT.rec[ATE][k]=v;else delete AT.rec[ATE][k]}
+ for(let d=new Date(f+"T00:00:00"),end=new Date(t+"T00:00:00");d<=end;d.setDate(d.getDate()+1)){const k=atFm(d);if(set)AT.rec[ATE][k]=v;else delete AT.rec[ATE][k]}
  cloudAtt();$("dlg").close();render()}
 </script>
 <script>if("serviceWorker"in navigator)addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});</script></body></html>
