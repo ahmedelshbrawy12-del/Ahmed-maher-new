@@ -377,7 +377,7 @@ window.addEventListener("popstate",function(){
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth,initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,browserSessionPersistence,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut,EmailAuthProvider,reauthenticateWithCredential,updatePassword} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {initializeFirestore,getFirestore,persistentLocalCache,persistentMultipleTabManager,doc,setDoc,deleteDoc,collection,onSnapshot,getDocs} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {initializeFirestore,getFirestore,persistentLocalCache,persistentMultipleTabManager,doc,setDoc,deleteDoc,collection,onSnapshot,getDocs,getDoc} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyCV8GU9J2ykmmBcFaiIRId-NaTysa4-MZU",authDomain:"ahmed-6519e.firebaseapp.com",projectId:"ahmed-6519e",storageBucket:"ahmed-6519e.firebasestorage.app",messagingSenderId:"727484125260",appId:"1:727484125260:web:cfba5481ca4da08084e4e9"});
 let auth;try{auth=initializeAuth(app,{persistence:[indexedDBLocalPersistence,browserLocalPersistence,browserSessionPersistence]})}catch(e){auth=getAuth(app)}
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
@@ -395,7 +395,8 @@ window.CLOUD={
  delSite:id=>deleteDoc(doc(db,...U("sites",id))),
  setPers:o=>setDoc(doc(db,...U("meta","personal")),o),
  setNotes:o=>setDoc(doc(db,...U("meta","notes")),o),
- setAtt:o=>setDoc(doc(db,...U("meta","attendance")),o),
+ setAtt:o=>setDoc(doc(db,"shared","attendance"),o),
+ async oldAtt(){const d=await getDoc(doc(db,...U("meta","attendance")));return d.exists()?d.data():null},
  putImg:(id,d)=>setDoc(doc(db,...U("images",id)),{d}),
  delImg:id=>deleteDoc(doc(db,...U("images",id))),
  async allImgs(){const o={},s=await getDocs(collection(db,...U("images")));s.forEach(x=>o[x.id]=x.data().d);return o},
@@ -403,7 +404,7 @@ window.CLOUD={
   un.push(onSnapshot(collection(db,...U("sites")),s=>{if(s.metadata.hasPendingWrites)return;window.onSites(s.docs.map(d=>d.data()),s.metadata.fromCache)},e=>console.warn(e)));
   un.push(onSnapshot(doc(db,...U("meta","personal")),d=>{if(d.metadata.hasPendingWrites)return;window.onPers(d.exists()?d.data():null)},e=>console.warn(e)));
   un.push(onSnapshot(doc(db,...U("meta","notes")),d=>{if(d.metadata.hasPendingWrites)return;if(window.onNotes)window.onNotes(d.exists()?d.data():null)},e=>console.warn(e)));
-  un.push(onSnapshot(doc(db,...U("meta","attendance")),d=>{if(d.metadata.hasPendingWrites)return;if(window.onAtt)window.onAtt(d.exists()?d.data():null)},e=>console.warn(e)))},
+  un.push(onSnapshot(doc(db,"shared","attendance"),d=>{if(d.metadata.hasPendingWrites)return;if(window.onAtt)window.onAtt(d.exists()?d.data():null,d.metadata.fromCache)},e=>console.warn(e)))},
  stop(){un.forEach(f=>f());un=[]}
 };
 onAuthStateChanged(auth,u=>{uid=u?u.uid:null;window.onAuth(u)});
@@ -554,9 +555,15 @@ function atNorm(o){const r={emps:[],rec:{},cfg:{}};if(o&&Array.isArray(o.emps))r
  if(o&&o.rec&&typeof o.rec==="object")for(const k in o.rec){const m=o.rec[k];if(m&&typeof m==="object"){r.rec[k]={};for(const d in m)if(m[d])r.rec[k][d]=String(m[d])}}if(o&&o.cfg&&typeof o.cfg==="object")for(const k in o.cfg){const m=o.cfg[k];if(m&&typeof m==="object"){r.cfg[k]={};for(const ym in m){const c=m[ym]||{};r.cfg[k][/^\d{4}-\d{2}$/.test(ym)?ym+"-1":ym]={rate:+c.rate||0,days:+c.days||0,trans:+c.trans||0}}}}
  r.seed=+(o&&o.seed)||0;
  return r}
-function attReset(u){ATUID=u?u.uid:null;AT={emps:[],rec:{},cfg:{}};ATE=null;if(u){try{AT=atNorm(JSON.parse(localStorage.getItem(atKey())||"null"))}catch(e){}}}
-function cloudAtt(){atLocal();if(!ME||!window.CLOUD||!CLOUD.setAtt)return;try{CLOUD.setAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed||0}).catch(cerr)}catch(e){cerr(e)}}
-window.onAtt=function(o){if(!ME)return;if(!o){if(AT.emps.length)cloudAtt();return}AT=atNorm(o);atLocal();if(String(view).indexOf("att")===0)render()};
+let ATREADY=false;
+function attReset(u){ATREADY=false;ATUID=u?u.uid:null;AT={emps:[],rec:{},cfg:{}};ATE=null;if(u){try{AT=atNorm(JSON.parse(localStorage.getItem(atKey())||"null"))}catch(e){}}}
+function cloudAtt(){atLocal();if(!ATREADY)return;if(!ME||!window.CLOUD||!CLOUD.setAtt)return;try{CLOUD.setAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed||0}).catch(cerr)}catch(e){cerr(e)}}
+window.onAtt=function(o,fc){if(!ME)return;const rd=()=>{if(String(view).indexOf("att")===0)render()};
+ if(o){AT=atNorm(o);ATREADY=true;atLocal();rd();return}
+ if(fc)return;
+ ATREADY=true;
+ if(AT.emps.length){cloudAtt();rd();return}
+ (window.CLOUD&&CLOUD.oldAtt?CLOUD.oldAtt():Promise.resolve(null)).then(x=>{if(x&&Array.isArray(x.emps)&&x.emps.length){AT=atNorm(x);cloudAtt()}rd()}).catch(()=>rd())};
 const atKy=(y,m,d)=>y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
 const atHue=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%360;return h};
 function atPlaces(){const o={};Object.values(AT.rec).forEach(m=>Object.values(m).forEach(v=>o[v]=1));return Object.keys(o)}
@@ -565,7 +572,7 @@ function atP(y,m,p){return p===1?[new Date(y,m,11),new Date(y,m,25)]:[new Date(y
 function atPK(d){const x=d.getDate();let y=d.getFullYear(),m=d.getMonth();if(x<=10){const q=new Date(y,m-1,1);y=q.getFullYear();m=q.getMonth()}return y+"-"+String(m+1).padStart(2,"0")+"-"+(x>=11&&x<=25?1:2)}
 function atLab(y,m,p){const [a,b]=atP(y,m,p);return p===1?`11 ← 25 ${AT_MON[m]}`:`26 ${AT_MON[a.getMonth()]} ← 10 ${AT_MON[b.getMonth()]}`}
 function attRender(A,T){T.style.display="none";
- const e=AT.emps.find(x=>x.id===ATE);if(view!=="att"&&!e)view="att";if(view==="att"&&!(AT.seed>=2))attSeed();
+ const e=AT.emps.find(x=>x.id===ATE);if(view!=="att"&&!e)view="att";if(view==="att"&&ATREADY&&!(AT.seed>=2))attSeed();
  let h="";
  if(view==="att"){
   h=`<div class="row noprint"><button class="btn g" onclick="view='main';render();scrollTo(0,0)">→ رجوع</button></div><h1>📅 الحضور والتمام</h1>
