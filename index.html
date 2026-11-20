@@ -631,7 +631,7 @@ function attRender(A,T){T.style.display="none";
  let h="";
  if(view==="att"){
   h=`<div class="row noprint"><button class="btn g" onclick="view='main';render();scrollTo(0,0)">→ رجوع</button></div><h1>📅 الحضور والتمام</h1>
-  <div class="card"><input id="atn" placeholder="اسم الموظف الجديد"><input id="atg" list="atgl" placeholder="المجموعة (مثال: مهندسين، فنيين)"><datalist id="atgl">${atGroups().map(g=>`<option value="${esc(g)}">`).join("")}</datalist><button class="btn" onclick="attAdd()">➕ إضافة موظف</button><button class="btn g" onclick="attXlsDlg()">📊 تصدير إكسل</button></div>`+
+  <div class="card"><input id="atn" placeholder="اسم الموظف الجديد"><input id="atg" list="atgl" placeholder="المجموعة (مثال: مهندسين، فنيين)"><datalist id="atgl">${atGroups().map(g=>`<option value="${esc(g)}">`).join("")}</datalist><button class="btn" onclick="attAdd()">➕ إضافة موظف</button><button class="btn g" onclick="attXlsDlg()">📊 تصدير إكسل</button><button class="btn g" onclick="attSumDlg()">📈 ملخص المواقع والإجازات</button><button class="btn g" onclick="attImpDlg()">📥 استيراد من إكسل</button></div>`+
   (atGrouped().map(g=>(g.h?`<div class="m" style="font-weight:700;margin:14px 0 6px;font-size:15px">${esc(g.h)} (${g.l.length})</div>`:"")+g.l.map(x=>`<div class="card site" onclick="attOpen('${x.id}')"><div class="row"><span class="n">${esc(x.name)}</span><span class="m">${Object.keys(AT.rec[x.id]||{}).length} يوم مسجل</span></div><div style="margin-top:6px"><button class="btn r" onclick="event.stopPropagation();attEdit('${x.id}')">تعديل</button><button class="btn r" onclick="event.stopPropagation();attDel('${x.id}')">حذف</button></div></div>`).join("")).join("")||`<div class="card m">لا يوجد موظفين بعد. أضف أول موظف.</div>`);
  }else if(view==="attyear"){
   const r=AT.rec[e.id]||{};
@@ -698,6 +698,143 @@ async function attXlsx(){const m=$("axm"),va=$("axf").value,vb=$("axt").value;
  const buf=await wb.xlsx.writeBuffer(),type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",blob=new Blob([buf],{type}),name="حضور-"+va+"-إلى-"+vb+".xlsx";
  m.textContent="";const tg=await SV.ask(name.replace(/\.xlsx$/,""),"xlsx",type);if(!tg)return;
  try{await SV.write(tg,blob);$("dlg").close()}catch(e){if(!(e&&e.name==="AbortError")){m.style.color="";m.textContent="تعذر حفظ الملف"}}}
+function atKind(v){const n=atNm(v);
+ if(/اجاز/.test(n))return /رسم|عيد|قومي|وطني/.test(n)?"off":"leave";
+ if(/غياب|غايب/.test(n))return(/اذن/.test(n)&&!/بدون|بلا|من غير/.test(n))?"perm":"abs";
+ return "site"}
+const AT_KL={leave:"إجازة عادية",off:"إجازة رسمية",perm:"غياب بإذن",abs:"غياب"};
+const atDmy=k=>k.split("-").reverse().join("/");
+function atDayNm(k){const d=new Date(k+"T00:00:00");return AT_DAY[(d.getDay()+1)%7]}
+function atCollect(va,vb){const o=[];AT.emps.forEach(e=>{const r=AT.rec[e.id]||{};Object.keys(r).sort().forEach(k=>{if(k>=va&&k<=vb){const v=String(r[k]||"").trim();if(v)o.push({e:e,k:k,v:v,c:atKind(v)})}})});return o}
+function attSumDlg(){if(!AT.emps.length)return alert("أضف موظفين الأول");
+ const n=new Date(),dd=n.getDate();let m=n.getMonth(),p=1;if(dd<=10){m--;p=2}else if(dd>=26)p=2;const q=new Date(n.getFullYear(),m,1),y=q.getFullYear();m=q.getMonth();const [a,b]=atP(y,m,p);
+ dlg(`<h3>📈 ملخص المواقع والإجازات</h3><div class="m" style="margin-bottom:6px">اختار الفترة</div><input id="rxmo" type="month" value="${y}-${String(m+1).padStart(2,"0")}"><div class="row" style="margin-top:6px;flex-wrap:wrap"><button class="btn g" onclick="attRXP(1)">11 ← 25</button><button class="btn g" onclick="attRXP(2)">26 ← 10</button><button class="btn g" onclick="attRXP(3)">الشهر كله</button><button class="btn g" onclick="attRXP(4)">السنة كلها</button></div><div class="m" style="margin-top:8px">من</div><input id="rxf" type="date" value="${atFm(a)}"><div class="m" style="margin-top:6px">إلى</div><input id="rxt" type="date" value="${atFm(b)}"><div id="rxm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" onclick="attSumXlsx('sites')">📍 حضور المواقع</button><button class="btn" onclick="attSumXlsx('leave')">🏖️ الإجازات</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div><div class="m" style="margin-top:8px;font-size:12px;line-height:1.7">الإجازات بتتعرف من النص المكتوب في خانة المكان: كلمة «إجازة» (وفيها «رسمية» أو «عيد» = رسمية، غير كده = عادية) أو «غياب بإذن».</div>`)}
+function attRXP(p){const v=$("rxmo").value;if(!v)return;const [y,m]=v.split("-").map(Number);let a,b;
+ if(p===1||p===2)[a,b]=atP(y,m-1,p);else if(p===3){a=new Date(y,m-1,1);b=new Date(y,m,0)}else{a=new Date(y,0,1);b=new Date(y,11,31)}
+ $("rxf").value=atFm(a);$("rxt").value=atFm(b)}
+async function attSumXlsx(kind){const m=$("rxm"),va=$("rxf").value,vb=$("rxt").value;
+ if(!va||!vb)return m.textContent="حدد تاريخ البداية والنهاية";
+ if(vb<va)return m.textContent="تاريخ النهاية قبل البداية";
+ const rows=atCollect(va,vb);
+ if(kind==="sites"&&!rows.length)return m.textContent="مفيش بيانات حضور في الفترة دي";
+ if(kind==="leave"&&!rows.some(x=>x.c!=="site"&&x.c!=="abs"))return m.textContent="مفيش إجازات مسجلة في الفترة دي";
+ m.style.color="var(--mut)";m.textContent="جاري تجهيز الملف...";
+ let EJ;try{EJ=await attLoadEJ()}catch(e){m.style.color="";return m.textContent="تعذر تحميل مكتبة الإكسل، تأكد من الإنترنت وحاول تاني"}
+ let blob,name;const type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+ try{
+  const wb=new EJ.Workbook(),fill=c=>({type:"pattern",pattern:"solid",fgColor:{argb:c}}),bd={style:"thin",color:{argb:"FF000000"}},B={top:bd,bottom:bd,left:bd,right:bd};
+  const sty=(c,f,bold,col)=>{c.fill=fill(f);c.border=B;c.font={bold:!!bold,size:12,name:"Arial",color:{argb:col||"FF000000"}};c.alignment={horizontal:"center",vertical:"middle",wrapText:true}};
+  const GR="FFD9D9D9",BL="FF5B9BD5",NV="FF1F3864",LB="FF9DC3E6",WH="FFFFFFFF",rng=atDmy(va)+" إلى "+atDmy(vb);
+  const head=(ws,nc,t)=>{ws.mergeCells(1,1,1,nc);const c=ws.getCell(1,1);c.value=t;sty(c,NV,true,WH);ws.getRow(1).height=28;ws.getRow(2).height=40};
+  const hdr=(ws,arr)=>arr.forEach((h,i)=>{const c=ws.getCell(2,i+1);c.value=h;sty(c,BL,true,WH)});
+  if(kind==="sites"){
+   const sm={};rows.forEach(x=>{if(x.c==="site"){const k=atNm(x.v);if(!sm[k])sm[k]={n:x.v,t:0,c:{}};sm[k].t++;sm[k].c[x.e.id]=(sm[k].c[x.e.id]||0)+1}});
+   const S=Object.values(sm).sort((a,b)=>b.t-a.t||(a.n<b.n?-1:1)),ns=S.length,nc=2+ns+2;
+   const ws=wb.addWorksheet("حضور المواقع",{views:[{rightToLeft:true,state:"frozen",xSplit:1,ySplit:2}]});
+   head(ws,nc,"حضور الموظفين في المواقع — من "+rng);
+   hdr(ws,["الموظف","المجموعة"].concat(S.map(s=>s.n),["إجمالي أيام الحضور","أيام إجازة / غياب"]));
+   ws.getColumn(1).width=32;ws.getColumn(2).width=14;for(let i=3;i<=nc;i++)ws.getColumn(i).width=16;
+   const oth={};rows.forEach(x=>{if(x.c!=="site")oth[x.e.id]=(oth[x.e.id]||0)+1});
+   let r=3;const r0=r,tot=new Array(nc+1).fill(0);
+   AT.emps.forEach(e=>{const row=ws.getRow(r);row.height=28;
+    const c1=row.getCell(1);c1.value=e.name;sty(c1,GR,true);const c2=row.getCell(2);c2.value=e.grp||"";sty(c2,WH);
+    let sum=0;S.forEach((s,i)=>{const v=s.c[e.id]||0,c=row.getCell(3+i);c.value=v||null;sty(c,WH);sum+=v;tot[3+i]+=v});
+    const ct=row.getCell(3+ns);ct.value=ns?{formula:"SUM("+row.getCell(3).address+":"+row.getCell(2+ns).address+")",result:sum}:0;sty(ct,LB,true);tot[3+ns]+=sum;
+    const co=row.getCell(4+ns),ov=oth[e.id]||0;co.value=ov||null;sty(co,WH);tot[4+ns]+=ov;r++});
+   const rt=ws.getRow(r);rt.height=28;const lt=rt.getCell(1);lt.value="الإجمالي";sty(lt,LB,true);sty(rt.getCell(2),LB,true);
+   for(let i=3;i<=nc;i++){const c=rt.getCell(i);c.value={formula:"SUM("+ws.getCell(r0,i).address+":"+ws.getCell(r-1,i).address+")",result:tot[i]};sty(c,LB,true)}
+   name="حضور-المواقع-"+va+"-إلى-"+vb;
+  }else{
+   const lv=rows.filter(x=>x.c==="leave"||x.c==="off"||x.c==="perm");
+   const cnt={};lv.forEach(x=>{(cnt[x.e.id]=cnt[x.e.id]||{leave:0,off:0,perm:0})[x.c]++});
+   const w1=wb.addWorksheet("ملخص الإجازات",{views:[{rightToLeft:true,state:"frozen",xSplit:1,ySplit:2}]});
+   head(w1,6,"ملخص إجازات الموظفين — من "+rng);hdr(w1,["الموظف","المجموعة","إجازة عادية","إجازة رسمية","غياب بإذن","الإجمالي"]);
+   w1.getColumn(1).width=32;w1.getColumn(2).width=14;for(let i=3;i<=6;i++)w1.getColumn(i).width=16;
+   let r=3;const r0=r,tt=[0,0,0,0,0,0,0];
+   AT.emps.forEach(e=>{const row=w1.getRow(r),k=cnt[e.id]||{leave:0,off:0,perm:0};row.height=28;
+    const c1=row.getCell(1);c1.value=e.name;sty(c1,GR,true);const c2=row.getCell(2);c2.value=e.grp||"";sty(c2,WH);
+    [k.leave,k.off,k.perm].forEach((v,i)=>{const c=row.getCell(3+i);c.value=v||null;sty(c,WH);tt[3+i]+=v});
+    const s3=k.leave+k.off+k.perm,ct=row.getCell(6);ct.value={formula:"SUM("+row.getCell(3).address+":"+row.getCell(5).address+")",result:s3};sty(ct,LB,true);tt[6]+=s3;r++});
+   const rt=w1.getRow(r);rt.height=28;const lt=rt.getCell(1);lt.value="الإجمالي";sty(lt,LB,true);sty(rt.getCell(2),LB,true);
+   for(let i=3;i<=6;i++){const c=rt.getCell(i);c.value={formula:"SUM("+w1.getCell(r0,i).address+":"+w1.getCell(r-1,i).address+")",result:tt[i]};sty(c,LB,true)}
+   const w2=wb.addWorksheet("تفاصيل الإجازات",{views:[{rightToLeft:true,state:"frozen",xSplit:0,ySplit:2}]});
+   head(w2,6,"تفاصيل أيام الإجازة — من "+rng);hdr(w2,["م","الموظف","التاريخ","اليوم","النوع","المكتوب في الخانة"]);
+   [6,32,14,14,18,30].forEach((w,i)=>w2.getColumn(i+1).width=w);
+   const ord=new Map(AT.emps.map((e,i)=>[e.id,i]));lv.sort((a,b)=>ord.get(a.e.id)-ord.get(b.e.id)||(a.k<b.k?-1:1));
+   lv.forEach((x,i)=>{const row=w2.getRow(i+3);row.height=26;[i+1,x.e.name,atDmy(x.k),atDayNm(x.k),AT_KL[x.c],x.v].forEach((v,j)=>{const c=row.getCell(j+1);c.value=v;sty(c,x.c==="off"?"FFFFF2CC":x.c==="perm"?"FFFCE4D6":WH,j===1)})});
+   name="إجازات-"+va+"-إلى-"+vb;
+  }
+  blob=new Blob([await wb.xlsx.writeBuffer()],{type});
+ }catch(e){m.style.color="";return m.textContent="حصل خطأ أثناء تجهيز الملف"}
+ m.textContent="";const tg=await SV.ask(name,"xlsx",type);if(!tg)return;
+ try{await SV.write(tg,blob);$("dlg").close()}catch(e){if(!(e&&e.name==="AbortError")){m.style.color="";m.textContent="تعذر حفظ الملف"}}}
+const atDig=s=>String(s).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
+function atCellTxt(c){let v=c?c.value:null;if(v==null)return "";
+ if(v instanceof Date)return "";
+ if(typeof v==="object"){if(v.richText)return v.richText.map(x=>x.text).join("").trim();if(v.result!=null&&!(v.result instanceof Date))v=v.result;else if(v.text!=null)v=v.text;else return ""}
+ return String(v).trim()}
+function atDayHead(c,ci){const v=c?c.value:null;if(v==null)return null;
+ if(v instanceof Date)return{c:ci,date:new Date(v.getUTCFullYear(),v.getUTCMonth(),v.getUTCDate())};
+ const t=atDig(atCellTxt(c));let x=/^(\d{1,2})$/.exec(t);
+ if(x&&+x[1]>=1&&+x[1]<=31)return{c:ci,d:+x[1]};
+ x=/^(\d{1,2})\s*[\/\-.]\s*(\d{1,2})$/.exec(t);
+ if(x&&+x[1]>=1&&+x[1]<=31&&+x[2]>=1&&+x[2]<=12)return{c:ci,d:+x[1],m:+x[2]};
+ return null}
+function atMapCols(cols,va,vb){const a=new Date(va+"T00:00:00"),b=new Date(vb+"T00:00:00"),all=[];for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1))all.push(new Date(d));
+ let last=null;const out=[];
+ cols.forEach(x=>{let dt=null;
+  if(x.date)dt=x.date;
+  else if(x.m)dt=all.find(z=>z.getDate()===x.d&&z.getMonth()+1===x.m)||null;
+  else{const cand=all.filter(z=>z.getDate()===x.d);dt=cand.find(z=>!last||z>last)||cand[0]||null}
+  if(dt){out.push({c:x.c,k:atFm(dt)});last=dt}});
+ return out.filter(x=>x.k>=va&&x.k<=vb)}
+function atParseSheet(wb,va,vb){let best=null;
+ wb.worksheets.forEach(ws=>{const mr=Math.min(ws.rowCount,15),mc=Math.min(ws.columnCount,500);
+  for(let r=1;r<=mr;r++){const row=ws.getRow(r),cols=[];for(let c=1;c<=mc;c++){const h=atDayHead(row.getCell(c),c);if(h)cols.push(h)}
+   if(cols.length>=3&&(!best||cols.length>best.cols.length))best={ws:ws,r:r,cols:cols}}});
+ if(!best)return null;
+ const map=atMapCols(best.cols,va,vb),fc=Math.min.apply(null,best.cols.map(x=>x.c));
+ if(fc<2)return null;
+ const ws=best.ws,last=Math.min(ws.rowCount,best.r+400);
+ let nc=1,bs=-1;for(let c=1;c<fc;c++){let sc=0;for(let r=best.r+1;r<=last;r++){const t=atCellTxt(ws.getRow(r).getCell(c));if(t&&AT.emps.some(e=>atSame(e.name,t)))sc++}if(sc>bs){bs=sc;nc=c}}
+ const items=[],unm={};
+ for(let r=best.r+1;r<=last;r++){const row=ws.getRow(r),name=atCellTxt(row.getCell(nc));if(!name||/اجمال|مجموع|total/i.test(atNm(name)))continue;
+  const vals=[];map.forEach(x=>{const v=atCellTxt(row.getCell(x.c));if(v&&v!=="-"&&v!=="—"&&v!=="0")vals.push({k:x.k,v:v})});
+  if(!vals.length)continue;
+  const e=AT.emps.find(z=>atSame(z.name,name));
+  if(e)vals.forEach(x=>items.push({id:e.id,name:e.name,k:x.k,v:x.v}));else(unm[name]=unm[name]||[]).push(...vals)}
+ return{items:items,unm:unm,sheet:ws.name,days:map.length,outside:best.cols.length-map.length}}
+
+function attImpDlg(){
+ const n=new Date(),dd=n.getDate();let m=n.getMonth(),p=1;if(dd<=10){m--;p=2}else if(dd>=26)p=2;const q=new Date(n.getFullYear(),m,1),y=q.getFullYear();m=q.getMonth();const [a,b]=atP(y,m,p);
+ const sl='width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;margin:4px 0';
+ dlg(`<h3>📥 استيراد الحضور من إكسل</h3><div style="max-height:72vh;overflow:auto"><div class="m">1) اختار ملف الإكسل (xlsx)</div><input id="imf" type="file" accept=".xlsx">
+ <div class="m" style="margin-top:8px">2) الفترة اللي عاوز تستوردها</div><input id="rxmo" type="month" value="${y}-${String(m+1).padStart(2,"0")}"><div class="row" style="margin-top:6px;flex-wrap:wrap"><button class="btn g" onclick="attRXP(1)">11 ← 25</button><button class="btn g" onclick="attRXP(2)">26 ← 10</button><button class="btn g" onclick="attRXP(3)">الشهر كله</button></div><div class="m" style="margin-top:8px">من</div><input id="rxf" type="date" value="${atFm(a)}"><div class="m" style="margin-top:6px">إلى</div><input id="rxt" type="date" value="${atFm(b)}">
+ <div class="m" style="margin-top:8px">3) لو اليوم مسجل قبل كده</div><select id="imm" style="${sl}"><option value="fill">أسيبه زي ما هو (أملأ الأيام الفاضية بس)</option><option value="over">أستبدله بالمكتوب في الإكسل</option></select>
+ <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px"><input id="ima" type="checkbox" style="width:auto;margin:0"> إضافة الموظفين اللي مش موجودين في البرنامج</label>
+ <div class="m" style="font-size:12px;line-height:1.7">الشيت لازم يكون شكله زي شيت تصدير الحضور: أسماء الموظفين في أول عمود، وأيام الشهر (رقم اليوم أو يوم/شهر) في صف العناوين، والمكان مكتوب تحت كل يوم.</div></div>
+ <div id="rxm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn" onclick="attImpGo()">معاينة</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
+async function attImpGo(){const m=$("rxm"),va=$("rxf").value,vb=$("rxt").value,f=$("imf").files[0];
+ if(!f)return m.textContent="اختار ملف الإكسل الأول";
+ if(!va||!vb)return m.textContent="حدد تاريخ البداية والنهاية";
+ if(vb<va)return m.textContent="تاريخ النهاية قبل البداية";
+ const mode=$("imm").value,add=$("ima").checked;
+ m.style.color="var(--mut)";m.textContent="جاري قراءة الملف...";
+ let EJ;try{EJ=await attLoadEJ()}catch(e){m.style.color="";return m.textContent="تعذر تحميل مكتبة الإكسل، تأكد من الإنترنت وحاول تاني"}
+ let res;try{const wb=new EJ.Workbook();await wb.xlsx.load(await f.arrayBuffer());res=atParseSheet(wb,va,vb)}catch(e){m.style.color="";return m.textContent="تعذر قراءة الملف، لازم يكون بصيغة xlsx"}
+ m.style.color="";
+ if(!res)return m.textContent="ملقيتش صف أيام الشهر أو عمود الأسماء في الشيت";
+ let nw=0,df=0,sm=0;const ids={};
+ res.items.forEach(x=>{const cur=(AT.rec[x.id]||{})[x.k];ids[x.id]=1;if(!cur)nw++;else if(cur!==x.v)df++;else sm++});
+ const un=Object.keys(res.unm),unDays=un.reduce((a,k)=>a+res.unm[k].length,0),willWrite=nw+(mode==="over"?df:0)+(add?unDays:0);
+ if(!willWrite)return m.textContent="مفيش حاجة جديدة تتسجل في الفترة دي"+(un.length?" (فيه موظفين مش موجودين: "+un.length+")":"");
+ window.ATIMP={items:res.items,unm:res.unm,mode:mode,add:add};
+ dlg(`<h3>📥 معاينة الاستيراد</h3><div class="m" style="line-height:1.9">الشيت: <b>${esc(res.sheet)}</b><br>الفترة: ${atDmy(va)} ← ${atDmy(vb)} (${res.days} يوم)<br>موظفين متطابقين: <b>${Object.keys(ids).length}</b><br>أيام جديدة هتتسجل: <b class="ok">${nw}</b><br>أيام مسجلة قبل كده بقيمة مختلفة: <b>${df}</b> ${mode==="over"?"(هتتغير)":"(هتفضل زي ما هي)"}<br>أيام مطابقة: ${sm}${res.outside?`<br>أيام في الشيت خارج الفترة: ${res.outside}`:""}${un.length?`<br><span class="bad">موظفين مش موجودين في البرنامج (${un.length}): ${un.slice(0,8).map(esc).join("، ")}${un.length>8?" ...":""}</span> ${add?"(هيتضافوا)":"(هيتخطوا)"}`:""}</div><div class="row" style="margin-top:10px"><button class="btn" onclick="attImpDo()">✅ تأكيد الاستيراد</button><button class="btn g" onclick="window.ATIMP=null;$('dlg').close()">إلغاء</button></div>`)}
+function attImpDo(){const I=window.ATIMP;if(!I)return;window.ATIMP=null;let n=0;
+ const put=(id,k,v)=>{if(!AT.rec[id])AT.rec[id]={};AT.rec[id][k]=v;n++};
+ I.items.forEach(x=>{const cur=(AT.rec[x.id]||{})[x.k];if(!cur||(I.mode==="over"&&cur!==x.v))put(x.id,x.k,x.v)});
+ if(I.add)Object.keys(I.unm).forEach(nm=>{let e=AT.emps.find(z=>atSame(z.name,nm));if(!e){e={id:"a"+Date.now()+"_"+AT.emps.length,name:nm,grp:""};AT.emps.push(e)}I.unm[nm].forEach(x=>{if(I.mode==="over"||!(AT.rec[e.id]||{})[x.k])put(e.id,x.k,x.v)})});
+ cloudAtt();$("dlg").close();render();setTimeout(()=>alert("تم الاستيراد: "+n+" يوم"),100)}
 function atGrouped(){const gs=[];AT.emps.forEach(e=>{const g=e.grp||"";let x=gs.find(y=>y.n===g);if(!x){x={n:g,l:[]};gs.push(x)}x.l.push(e)});gs.sort((a,b)=>(a.n===""?1:0)-(b.n===""?1:0));gs.forEach(g=>g.h=g.n||(gs.length>1?"موظفين":""));if(!gs.length)gs.push({n:"",h:"",l:[]});return gs}
 function atGroups(){return atGrouped().map(g=>g.n).filter(Boolean)}
 function atNm(s){return String(s).replace(/[\u064B-\u065F\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim()}
@@ -732,7 +869,7 @@ function attPick(){
 function attSw(id){ATE=id;$("dlg").close();render();scrollTo(0,0)}
 function attOpen(id){ATE=id;ATY=new Date().getFullYear();view="attyear";render();scrollTo(0,0)}
 function attDay(k){const cur=(AT.rec[ATE]||{})[k]||"",[pa,pb]=atP(ATY,ATM,ATP),mn=atFm(pa),mx=atFm(pb);
- dlg(`<h3>${k.split("-").reverse().join("/")}</h3><input id="atp" list="atl" placeholder="المكان (مثال: مطار العريش)" value="${esc(cur)}"><datalist id="atl">${atPlaces().map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
+ dlg(`<h3>${k.split("-").reverse().join("/")}</h3><input id="atp" list="atl" placeholder="المكان (مثال: مطار العريش)" value="${esc(cur)}"><datalist id="atl">${atPlaces().concat(["إجازة عادية","إجازة رسمية","غياب بإذن"].filter(x=>atPlaces().indexOf(x)<0)).map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
  <div class="m" style="margin-top:8px">تطبيق على الأيام من - إلى</div><div class="row"><input id="atf" type="date" min="${mn}" max="${mx}" value="${k}"><input id="att2" type="date" min="${mn}" max="${mx}" value="${k}"></div>
  <div class="row" style="margin-top:8px"><button class="btn" onclick="attSave(1)">حفظ</button><button class="btn r" onclick="attSave(0)">مسح</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 function attSave(set){const v=$("atp").value.trim(),[pa,pb]=atP(ATY,ATM,ATP),mn=atFm(pa),mx=atFm(pb);
