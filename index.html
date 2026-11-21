@@ -651,12 +651,12 @@ function attRender(A,T){T.style.display="none";
   const cf=((AT.cfg||{})[e.id]||{})[y+"-"+String(m+1).padStart(2,"0")+"-"+ATP]||{},al=(+cf.rate||0)*(+cf.days||0);
   const lb='font-size:13px;margin:0;white-space:nowrap;min-width:68px',ip='width:100px;margin:0;padding:6px 8px';
   h=`<div class="noprint" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><button class="btn g" onclick="view='attper';render()">→ رجوع</button><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">قيمة البدل</label><input id="atr" type="number" inputmode="decimal" style="${ip}" value="${cf.rate||""}" oninput="attCfg()"></div><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">عدد الأيام</label><input id="atd" type="number" inputmode="decimal" style="${ip}" value="${cf.days||""}" oninput="attCfg()"></div></div></div><div style="text-align:center;margin:12px 0 6px"><div onclick="attPick()" style="display:inline-block;font-size:24px;font-weight:700;cursor:pointer;line-height:1.4">${esc(e.name)} <span class="noprint" style="font-size:16px;color:var(--pri)">▾</span></div><div class="m" style="margin-top:2px;font-size:15px">${atLab(y,m,ATP)} ${pa.getFullYear()===pb.getFullYear()?y:pa.getFullYear()+"/"+pb.getFullYear()}</div></div><div class="noprint" style="display:flex;gap:8px;margin:8px 0">${[1,2].map(p=>`<button class="btn ${p===ATP?"":"g"}" style="margin:0;padding:6px 14px;font-size:13px" onclick="ATP=${p};render()">${p===1?"11 ← 25":"26 ← 10"}</button>`).join("")}</div>
-  <div style="display:flex;gap:4px;align-items:stretch"><button class="btn g noprint" style="width:30px;min-width:30px;padding:0;margin:0;font-size:24px;align-self:stretch" onclick="attStep(-1)" title="الفترة السابقة">›</button><div style="flex:1;min-width:0;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;direction:rtl">`+
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;direction:rtl">`+
   AT_DAY.map(d=>`<div class="m" style="text-align:center;font-size:11px">${d}</div>`).join("")+
   '<div></div>'.repeat(off)+
   ds.map((dt,i)=>{const d=dt.getDate(),k=atFm(dt),v=r[k],fri=dt.getDay()===5,fm=i===0||d===1;
    return `<div onclick="attDay('${k}')" style="cursor:pointer;min-height:62px;padding:3px;border-radius:8px;border:1px solid var(--bd);background:${v?`hsl(${atHue(v)} 55% 50% / .28)`:"var(--card)"};font-size:10.5px;text-align:center;line-height:1.25;overflow:hidden;word-break:break-word"><b style="font-size:13px;${fri?"color:var(--bad)":""}">${d}</b>${fm?`<span class="m" style="font-size:9px"> ${AT_MON[dt.getMonth()]}</span>`:""}<div>${v?esc(v):""}</div></div>`}).join("")+
-  `</div><button class="btn g noprint" style="width:30px;min-width:30px;padding:0;margin:0;font-size:24px;align-self:stretch" onclick="attStep(1)" title="الفترة التالية">‹</button></div><div class="m" style="margin-top:10px">اضغط على أي يوم لتسجيل مكان الموظف. · اسحب الشاشة أو استخدم الأسهم للتنقل بين الفترات.</div>
+  `</div><div class="m" style="margin-top:10px">اضغط على أي يوم لتسجيل مكان الموظف. · اسحب الشاشة للتنقل بين الفترات.</div>
   <div style="display:flex;gap:8px;margin-top:14px"><div class="card" style="flex:1;margin:0;padding:10px;display:flex;align-items:center;gap:6px;min-width:0"><span class="m" style="font-size:13px;white-space:nowrap">إجمالي البدلات</span><b id="ata" style="font-size:15px">${f(al)}</b></div><div class="card" style="flex:1;margin:0;padding:10px;display:flex;align-items:center;gap:6px;min-width:0"><span class="m" style="font-size:13px;white-space:nowrap">الانتقالات</span><input id="att_t" type="number" inputmode="decimal" style="flex:1;min-width:0;width:100%;margin:0;padding:6px 8px" value="${cf.trans||""}" oninput="attCfg()"></div></div>
   <div class="card" style="margin-top:10px;text-align:center"><div class="m">إجمالي المستحق</div><b id="ats" style="font-size:24px" class="ok">${f(al+(+cf.trans||0))}</b></div>`;
  }
@@ -698,17 +698,19 @@ async function attXlsx(){const m=$("axm"),va=$("axf").value,vb=$("axt").value;
  const buf=await wb.xlsx.writeBuffer(),type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",blob=new Blob([buf],{type}),name="حضور-"+va+"-إلى-"+vb+".xlsx";
  m.textContent="";const tg=await SV.ask(name.replace(/\.xlsx$/,""),"xlsx",type);if(!tg)return;
  try{await SV.write(tg,blob);$("dlg").close()}catch(e){if(!(e&&e.name==="AbortError")){m.style.color="";m.textContent="تعذر حفظ الملف"}}}
-function atKind(v){const n=atNm(v);
- if(/اجاز/.test(n))return /رسم|عيد|قومي|وطني/.test(n)?"off":"leave";
- if(/غياب|غايب/.test(n))return(/اذن/.test(n)&&!/بدون|بلا|من غير/.test(n))?"perm":"abs";
+function atKind(v){const n=atDig(atNm(v)),ab=/غياب|غايب/.test(n)||n.split(" ").indexOf("غ")>=0;
+ if(ab&&/(بدون|بلا|من غير)\s*(اذن|عذر)|غير مصرح/.test(n))return "unexc";
+ if(/اجاز/.test(n))return /رسم|عيد|نسيم|اكتوبر|مولد|زواج|جواز|قومي|وطني|تحرير|ثوره|راس السنه|هجري|اسراء|معراج/.test(n)?"off":"leave";
+ if(/^(6 |السادس من )?اكتوبر$|^(ال)?مولد( النبوي( الشريف)?)?$|^(ال)?عيد( .+)?$|^شم النسيم$|^(ال)?رسميه?$/.test(n))return "off";
+ if(ab)return "leave";
  return "site"}
-const AT_KL={leave:"إجازة عادية",off:"إجازة رسمية",perm:"غياب بإذن",abs:"غياب"};
+const AT_KL={leave:"إجازة عادية",off:"إجازة رسمية",unexc:"غياب بدون إذن"};
 const atDmy=k=>k.split("-").reverse().join("/");
 function atDayNm(k){const d=new Date(k+"T00:00:00");return AT_DAY[(d.getDay()+1)%7]}
 function atCollect(va,vb){const o=[];AT.emps.forEach(e=>{const r=AT.rec[e.id]||{};Object.keys(r).sort().forEach(k=>{if(k>=va&&k<=vb){const v=String(r[k]||"").trim();if(v)o.push({e:e,k:k,v:v,c:atKind(v)})}})});return o}
 function attSumDlg(){if(!AT.emps.length)return alert("أضف موظفين الأول");
  const n=new Date(),dd=n.getDate();let m=n.getMonth(),p=1;if(dd<=10){m--;p=2}else if(dd>=26)p=2;const q=new Date(n.getFullYear(),m,1),y=q.getFullYear();m=q.getMonth();const [a,b]=atP(y,m,p);
- dlg(`<h3>📈 ملخص المواقع والإجازات</h3><div class="m" style="margin-bottom:6px">اختار الفترة</div><input id="rxmo" type="month" value="${y}-${String(m+1).padStart(2,"0")}"><div class="row" style="margin-top:6px;flex-wrap:wrap"><button class="btn g" onclick="attRXP(1)">11 ← 25</button><button class="btn g" onclick="attRXP(2)">26 ← 10</button><button class="btn g" onclick="attRXP(3)">الشهر كله</button><button class="btn g" onclick="attRXP(4)">السنة كلها</button></div><div class="m" style="margin-top:8px">من</div><input id="rxf" type="date" value="${atFm(a)}"><div class="m" style="margin-top:6px">إلى</div><input id="rxt" type="date" value="${atFm(b)}"><div id="rxm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" onclick="attSumXlsx('sites')">📍 حضور المواقع</button><button class="btn" onclick="attSumXlsx('leave')">🏖️ الإجازات</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div><div class="m" style="margin-top:8px;font-size:12px;line-height:1.7">الإجازات بتتعرف من النص المكتوب في خانة المكان: كلمة «إجازة» (وفيها «رسمية» أو «عيد» = رسمية، غير كده = عادية) أو «غياب بإذن».</div>`)}
+ dlg(`<h3>📈 ملخص المواقع والإجازات</h3><div class="m" style="margin-bottom:6px">اختار الفترة</div><input id="rxmo" type="month" value="${y}-${String(m+1).padStart(2,"0")}"><div class="row" style="margin-top:6px;flex-wrap:wrap"><button class="btn g" onclick="attRXP(1)">11 ← 25</button><button class="btn g" onclick="attRXP(2)">26 ← 10</button><button class="btn g" onclick="attRXP(3)">الشهر كله</button><button class="btn g" onclick="attRXP(4)">السنة كلها</button></div><div class="m" style="margin-top:8px">من</div><input id="rxf" type="date" value="${atFm(a)}"><div class="m" style="margin-top:6px">إلى</div><input id="rxt" type="date" value="${atFm(b)}"><div id="rxm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" onclick="attSumXlsx('sites')">📍 حضور المواقع</button><button class="btn" onclick="attSumXlsx('leave')">🏖️ الإجازات</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div><div class="m" style="margin-top:8px;font-size:12px;line-height:1.7">التصنيف من النص المكتوب في خانة المكان:<br>• إجازة عادية: إجازة، غياب، غياب بإذن، غ بإذن.<br>• إجازة رسمية: أعياد، شم النسيم، المولد النبوي، 6 أكتوبر، إجازة زواج، وأي إجازة رسمية.<br>• غياب بدون إذن: مكتوب فيه «بدون إذن».</div>`)}
 function attRXP(p){const v=$("rxmo").value;if(!v)return;const [y,m]=v.split("-").map(Number);let a,b;
  if(p===1||p===2)[a,b]=atP(y,m-1,p);else if(p===3){a=new Date(y,m-1,1);b=new Date(y,m,0)}else{a=new Date(y,0,1);b=new Date(y,11,31)}
  $("rxf").value=atFm(a);$("rxt").value=atFm(b)}
@@ -717,51 +719,49 @@ async function attSumXlsx(kind){const m=$("rxm"),va=$("rxf").value,vb=$("rxt").v
  if(vb<va)return m.textContent="تاريخ النهاية قبل البداية";
  const rows=atCollect(va,vb);
  if(kind==="sites"&&!rows.length)return m.textContent="مفيش بيانات حضور في الفترة دي";
- if(kind==="leave"&&!rows.some(x=>x.c!=="site"&&x.c!=="abs"))return m.textContent="مفيش إجازات مسجلة في الفترة دي";
+ if(kind==="leave"&&!rows.some(x=>x.c!=="site"))return m.textContent="مفيش إجازات أو غياب مسجل في الفترة دي";
  m.style.color="var(--mut)";m.textContent="جاري تجهيز الملف...";
  let EJ;try{EJ=await attLoadEJ()}catch(e){m.style.color="";return m.textContent="تعذر تحميل مكتبة الإكسل، تأكد من الإنترنت وحاول تاني"}
  let blob,name;const type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
  try{
   const wb=new EJ.Workbook(),fill=c=>({type:"pattern",pattern:"solid",fgColor:{argb:c}}),bd={style:"thin",color:{argb:"FF000000"}},B={top:bd,bottom:bd,left:bd,right:bd};
-  const sty=(c,f,bold,col)=>{c.fill=fill(f);c.border=B;c.font={bold:!!bold,size:12,name:"Arial",color:{argb:col||"FF000000"}};c.alignment={horizontal:"center",vertical:"middle",wrapText:true}};
-  const GR="FFD9D9D9",BL="FF5B9BD5",NV="FF1F3864",LB="FF9DC3E6",WH="FFFFFFFF",rng=atDmy(va)+" إلى "+atDmy(vb);
-  const head=(ws,nc,t)=>{ws.mergeCells(1,1,1,nc);const c=ws.getCell(1,1);c.value=t;sty(c,NV,true,WH);ws.getRow(1).height=28;ws.getRow(2).height=40};
-  const hdr=(ws,arr)=>arr.forEach((h,i)=>{const c=ws.getCell(2,i+1);c.value=h;sty(c,BL,true,WH)});
+  const sty=(c,f,bold,sz)=>{c.fill=fill(f);c.border=B;c.font={bold:!!bold,size:sz||12,name:"Arial"};c.alignment={horizontal:"center",vertical:"middle",wrapText:true}};
+  const GR="FFD9D9D9",BL="FF5B9BD5",LB="FF9DC3E6",WH="FFFFFFFF",rng="من "+atDmy(va)+" إلى "+atDmy(vb),GS=atGrouped();
+  const frame=(ws,labels)=>{const r1=ws.getRow(1),r2=ws.getRow(2);r1.height=labels.some(l=>l.length>12)?52:34;r2.height=26;
+   const a1=r1.getCell(1);a1.value=rng;sty(a1,WH,false,11);
+   labels.forEach((h,i)=>{const c=r1.getCell(i+2);c.value=h;sty(c,GR,true);sty(r2.getCell(i+2),LB,true)});
+   const a2=r2.getCell(1);a2.value=GS[0].h||"الموظفين";sty(a2,BL,true,13);ws.getColumn(1).width=34;return labels.length+1};
+  const emit=(ws,nc,fn)=>{let RW=3;GS.forEach((g,gi)=>{if(gi>0){const hr=ws.getRow(RW++);hr.height=24;for(let k=1;k<=nc;k++)sty(hr.getCell(k),BL,true,13);hr.getCell(1).value=g.h||"موظفين"}
+   g.l.forEach(e=>{const r=ws.getRow(RW++);r.height=34;const c0=r.getCell(1);c0.value=e.name;sty(c0,GR,true);fn(r,e)})});return RW};
+  const total=(ws,nc,from,end,sums,cols)=>{const rt=ws.getRow(end);rt.height=28;const lt=rt.getCell(1);lt.value="الإجمالي";sty(lt,LB,true);
+   for(let i=2;i<=nc;i++){const c=rt.getCell(i);if(cols.indexOf(i)>=0){c.value={formula:"SUM("+ws.getCell(from,i).address+":"+ws.getCell(end-1,i).address+")",result:sums[i]||0}}sty(c,LB,true)}};
   if(kind==="sites"){
    const sm={};rows.forEach(x=>{if(x.c==="site"){const k=atNm(x.v);if(!sm[k])sm[k]={n:x.v,t:0,c:{}};sm[k].t++;sm[k].c[x.e.id]=(sm[k].c[x.e.id]||0)+1}});
-   const S=Object.values(sm).sort((a,b)=>b.t-a.t||(a.n<b.n?-1:1)),ns=S.length,nc=2+ns+2;
+   const S=Object.values(sm).sort((a,b)=>b.t-a.t||(a.n<b.n?-1:1)),ns=S.length;
    const ws=wb.addWorksheet("حضور المواقع",{views:[{rightToLeft:true,state:"frozen",xSplit:1,ySplit:2}]});
-   head(ws,nc,"حضور الموظفين في المواقع — من "+rng);
-   hdr(ws,["الموظف","المجموعة"].concat(S.map(s=>s.n),["إجمالي أيام الحضور","أيام إجازة / غياب"]));
-   ws.getColumn(1).width=32;ws.getColumn(2).width=14;for(let i=3;i<=nc;i++)ws.getColumn(i).width=16;
-   const oth={};rows.forEach(x=>{if(x.c!=="site")oth[x.e.id]=(oth[x.e.id]||0)+1});
-   let r=3;const r0=r,tot=new Array(nc+1).fill(0);
-   AT.emps.forEach(e=>{const row=ws.getRow(r);row.height=28;
-    const c1=row.getCell(1);c1.value=e.name;sty(c1,GR,true);const c2=row.getCell(2);c2.value=e.grp||"";sty(c2,WH);
-    let sum=0;S.forEach((s,i)=>{const v=s.c[e.id]||0,c=row.getCell(3+i);c.value=v||null;sty(c,WH);sum+=v;tot[3+i]+=v});
-    const ct=row.getCell(3+ns);ct.value=ns?{formula:"SUM("+row.getCell(3).address+":"+row.getCell(2+ns).address+")",result:sum}:0;sty(ct,LB,true);tot[3+ns]+=sum;
-    const co=row.getCell(4+ns),ov=oth[e.id]||0;co.value=ov||null;sty(co,WH);tot[4+ns]+=ov;r++});
-   const rt=ws.getRow(r);rt.height=28;const lt=rt.getCell(1);lt.value="الإجمالي";sty(lt,LB,true);sty(rt.getCell(2),LB,true);
-   for(let i=3;i<=nc;i++){const c=rt.getCell(i);c.value={formula:"SUM("+ws.getCell(r0,i).address+":"+ws.getCell(r-1,i).address+")",result:tot[i]};sty(c,LB,true)}
+   const nc=frame(ws,S.map(s=>s.n).concat(["إجمالي أيام الحضور","أيام إجازة / غياب"]));for(let i=2;i<=nc;i++)ws.getColumn(i).width=16;
+   const oth={};rows.forEach(x=>{if(x.c!=="site")oth[x.e.id]=(oth[x.e.id]||0)+1});const sums={};
+   const end=emit(ws,nc,(r,e)=>{let sum=0;S.forEach((s,i)=>{const v=s.c[e.id]||0,c=r.getCell(2+i);c.value=v||null;sty(c,WH);sum+=v;sums[2+i]=(sums[2+i]||0)+v});
+    const ct=r.getCell(2+ns);ct.value=ns?{formula:"SUM("+r.getCell(2).address+":"+r.getCell(1+ns).address+")",result:sum}:0;sty(ct,LB,true);sums[2+ns]=(sums[2+ns]||0)+sum;
+    const co=r.getCell(3+ns),ov=oth[e.id]||0;co.value=ov||null;sty(co,WH);sums[3+ns]=(sums[3+ns]||0)+ov});
+   total(ws,nc,3,end,sums,Array.from({length:nc-1},(_,i)=>i+2));
    name="حضور-المواقع-"+va+"-إلى-"+vb;
   }else{
-   const lv=rows.filter(x=>x.c==="leave"||x.c==="off"||x.c==="perm");
-   const cnt={};lv.forEach(x=>{(cnt[x.e.id]=cnt[x.e.id]||{leave:0,off:0,perm:0})[x.c]++});
+   const lv=rows.filter(x=>x.c!=="site"),ord=new Map(AT.emps.map((e,i)=>[e.id,i]));lv.sort((a,b)=>ord.get(a.e.id)-ord.get(b.e.id)||(a.k<b.k?-1:1));
+   const per={};lv.forEach(x=>{(per[x.e.id]=per[x.e.id]||[]).push(x)});
    const w1=wb.addWorksheet("ملخص الإجازات",{views:[{rightToLeft:true,state:"frozen",xSplit:1,ySplit:2}]});
-   head(w1,6,"ملخص إجازات الموظفين — من "+rng);hdr(w1,["الموظف","المجموعة","إجازة عادية","إجازة رسمية","غياب بإذن","الإجمالي"]);
-   w1.getColumn(1).width=32;w1.getColumn(2).width=14;for(let i=3;i<=6;i++)w1.getColumn(i).width=16;
-   let r=3;const r0=r,tt=[0,0,0,0,0,0,0];
-   AT.emps.forEach(e=>{const row=w1.getRow(r),k=cnt[e.id]||{leave:0,off:0,perm:0};row.height=28;
-    const c1=row.getCell(1);c1.value=e.name;sty(c1,GR,true);const c2=row.getCell(2);c2.value=e.grp||"";sty(c2,WH);
-    [k.leave,k.off,k.perm].forEach((v,i)=>{const c=row.getCell(3+i);c.value=v||null;sty(c,WH);tt[3+i]+=v});
-    const s3=k.leave+k.off+k.perm,ct=row.getCell(6);ct.value={formula:"SUM("+row.getCell(3).address+":"+row.getCell(5).address+")",result:s3};sty(ct,LB,true);tt[6]+=s3;r++});
-   const rt=w1.getRow(r);rt.height=28;const lt=rt.getCell(1);lt.value="الإجمالي";sty(lt,LB,true);sty(rt.getCell(2),LB,true);
-   for(let i=3;i<=6;i++){const c=rt.getCell(i);c.value={formula:"SUM("+w1.getCell(r0,i).address+":"+w1.getCell(r-1,i).address+")",result:tt[i]};sty(c,LB,true)}
-   const w2=wb.addWorksheet("تفاصيل الإجازات",{views:[{rightToLeft:true,state:"frozen",xSplit:0,ySplit:2}]});
-   head(w2,6,"تفاصيل أيام الإجازة — من "+rng);hdr(w2,["م","الموظف","التاريخ","اليوم","النوع","المكتوب في الخانة"]);
-   [6,32,14,14,18,30].forEach((w,i)=>w2.getColumn(i+1).width=w);
-   const ord=new Map(AT.emps.map((e,i)=>[e.id,i]));lv.sort((a,b)=>ord.get(a.e.id)-ord.get(b.e.id)||(a.k<b.k?-1:1));
-   lv.forEach((x,i)=>{const row=w2.getRow(i+3);row.height=26;[i+1,x.e.name,atDmy(x.k),atDayNm(x.k),AT_KL[x.c],x.v].forEach((v,j)=>{const c=row.getCell(j+1);c.value=v;sty(c,x.c==="off"?"FFFFF2CC":x.c==="perm"?"FFFCE4D6":WH,j===1)})});
+   const nc=frame(w1,["إجازة عادية","إجازة رسمية","غياب بدون إذن","الإجمالي","تواريخ الإجازات"]);for(let i=2;i<=5;i++)w1.getColumn(i).width=16;w1.getColumn(6).width=46;
+   const sums={};
+   const end=emit(w1,nc,(r,e)=>{const L=per[e.id]||[],k={leave:0,off:0,unexc:0};L.forEach(x=>k[x.c]++);
+    [k.leave,k.off,k.unexc].forEach((v,i)=>{const c=r.getCell(2+i);c.value=v||null;sty(c,WH);sums[2+i]=(sums[2+i]||0)+v});
+    const s3=k.leave+k.off+k.unexc,ct=r.getCell(5);ct.value={formula:"SUM("+r.getCell(2).address+":"+r.getCell(4).address+")",result:s3};sty(ct,LB,true);sums[5]=(sums[5]||0)+s3;
+    const cd=r.getCell(6);cd.value=L.map(x=>atDmy(x.k)+" — "+atDayNm(x.k)+" — "+AT_KL[x.c]).join("\n")||null;sty(cd,WH);cd.alignment={horizontal:"right",vertical:"middle",wrapText:true};
+    r.height=Math.min(400,Math.max(34,L.length*20+10))});
+   total(w1,nc,3,end,sums,[2,3,4,5]);
+   const w2=wb.addWorksheet("تفاصيل الإجازات",{views:[{rightToLeft:true,state:"frozen",xSplit:0,ySplit:1}]});
+   ["م","الموظف","تاريخ الإجازة","اليوم","النوع","المكتوب في الخانة"].forEach((h,i)=>{const c=w2.getCell(1,i+1);c.value=h;sty(c,GR,true)});w2.getRow(1).height=30;
+   [6,32,16,14,18,30].forEach((w,i)=>w2.getColumn(i+1).width=w);
+   lv.forEach((x,i)=>{const row=w2.getRow(i+2);row.height=26;[i+1,x.e.name,atDmy(x.k),atDayNm(x.k),AT_KL[x.c],x.v].forEach((v,j)=>{const c=row.getCell(j+1);c.value=v;sty(c,x.c==="off"?"FFFFF2CC":x.c==="unexc"?"FFFFC7CE":WH,j===1)})});
    name="إجازات-"+va+"-إلى-"+vb;
   }
   blob=new Blob([await wb.xlsx.writeBuffer()],{type});
@@ -884,7 +884,7 @@ function attPick(){
 function attSw(id){ATE=id;$("dlg").close();render();scrollTo(0,0)}
 function attOpen(id){ATE=id;ATY=new Date().getFullYear();view="attyear";render();scrollTo(0,0)}
 function attDay(k){const cur=(AT.rec[ATE]||{})[k]||"",[pa,pb]=atP(ATY,ATM,ATP),mn=atFm(pa),mx=atFm(pb);
- dlg(`<h3>${k.split("-").reverse().join("/")}</h3><input id="atp" list="atl" placeholder="المكان (مثال: مطار العريش)" value="${esc(cur)}"><datalist id="atl">${atPlaces().concat(["إجازة عادية","إجازة رسمية","غياب بإذن"].filter(x=>atPlaces().indexOf(x)<0)).map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
+ dlg(`<h3>${k.split("-").reverse().join("/")}</h3><input id="atp" list="atl" placeholder="المكان (مثال: مطار العريش)" value="${esc(cur)}"><datalist id="atl">${atPlaces().concat(["إجازة","إجازة رسمية","غياب بإذن","غياب بدون إذن"].filter(x=>atPlaces().indexOf(x)<0)).map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
  <div class="m" style="margin-top:8px">تطبيق على الأيام من - إلى</div><div class="row"><input id="atf" type="date" min="${mn}" max="${mx}" value="${k}"><input id="att2" type="date" min="${mn}" max="${mx}" value="${k}"></div>
  <div class="row" style="margin-top:8px"><button class="btn" onclick="attSave(1)">حفظ</button><button class="btn r" onclick="attSave(0)">مسح</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 function attSave(set){const v=$("atp").value.trim(),[pa,pb]=atP(ATY,ATM,ATP),mn=atFm(pa),mx=atFm(pb);
