@@ -651,12 +651,12 @@ function attRender(A,T){T.style.display="none";
   const cf=((AT.cfg||{})[e.id]||{})[y+"-"+String(m+1).padStart(2,"0")+"-"+ATP]||{},al=(+cf.rate||0)*(+cf.days||0);
   const lb='font-size:13px;margin:0;white-space:nowrap;min-width:68px',ip='width:100px;margin:0;padding:6px 8px';
   h=`<div class="noprint" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><button class="btn g" onclick="view='attper';render()">→ رجوع</button><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">قيمة البدل</label><input id="atr" type="number" inputmode="decimal" style="${ip}" value="${cf.rate||""}" oninput="attCfg()"></div><div style="display:flex;align-items:center;gap:8px"><label class="m" style="${lb}">عدد الأيام</label><input id="atd" type="number" inputmode="decimal" style="${ip}" value="${cf.days||""}" oninput="attCfg()"></div></div></div><div style="text-align:center;margin:12px 0 6px"><div onclick="attPick()" style="display:inline-block;font-size:24px;font-weight:700;cursor:pointer;line-height:1.4">${esc(e.name)} <span class="noprint" style="font-size:16px;color:var(--pri)">▾</span></div><div class="m" style="margin-top:2px;font-size:15px">${atLab(y,m,ATP)} ${pa.getFullYear()===pb.getFullYear()?y:pa.getFullYear()+"/"+pb.getFullYear()}</div></div><div class="noprint" style="display:flex;gap:8px;margin:8px 0">${[1,2].map(p=>`<button class="btn ${p===ATP?"":"g"}" style="margin:0;padding:6px 14px;font-size:13px" onclick="ATP=${p};render()">${p===1?"11 ← 25":"26 ← 10"}</button>`).join("")}</div>
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;direction:rtl">`+
+  <div style="display:flex;gap:4px;align-items:stretch"><button class="btn g noprint" style="width:30px;min-width:30px;padding:0;margin:0;font-size:24px;align-self:stretch" onclick="attStep(-1)" title="الفترة السابقة">›</button><div style="flex:1;min-width:0;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;direction:rtl">`+
   AT_DAY.map(d=>`<div class="m" style="text-align:center;font-size:11px">${d}</div>`).join("")+
   '<div></div>'.repeat(off)+
   ds.map((dt,i)=>{const d=dt.getDate(),k=atFm(dt),v=r[k],fri=dt.getDay()===5,fm=i===0||d===1;
    return `<div onclick="attDay('${k}')" style="cursor:pointer;min-height:62px;padding:3px;border-radius:8px;border:1px solid var(--bd);background:${v?`hsl(${atHue(v)} 55% 50% / .28)`:"var(--card)"};font-size:10.5px;text-align:center;line-height:1.25;overflow:hidden;word-break:break-word"><b style="font-size:13px;${fri?"color:var(--bad)":""}">${d}</b>${fm?`<span class="m" style="font-size:9px"> ${AT_MON[dt.getMonth()]}</span>`:""}<div>${v?esc(v):""}</div></div>`}).join("")+
-  `</div><div class="m" style="margin-top:10px">اضغط على أي يوم لتسجيل مكان الموظف.</div>
+  `</div><button class="btn g noprint" style="width:30px;min-width:30px;padding:0;margin:0;font-size:24px;align-self:stretch" onclick="attStep(1)" title="الفترة التالية">‹</button></div><div class="m" style="margin-top:10px">اضغط على أي يوم لتسجيل مكان الموظف. · اسحب الشاشة أو استخدم الأسهم للتنقل بين الفترات.</div>
   <div style="display:flex;gap:8px;margin-top:14px"><div class="card" style="flex:1;margin:0;padding:10px;display:flex;align-items:center;gap:6px;min-width:0"><span class="m" style="font-size:13px;white-space:nowrap">إجمالي البدلات</span><b id="ata" style="font-size:15px">${f(al)}</b></div><div class="card" style="flex:1;margin:0;padding:10px;display:flex;align-items:center;gap:6px;min-width:0"><span class="m" style="font-size:13px;white-space:nowrap">الانتقالات</span><input id="att_t" type="number" inputmode="decimal" style="flex:1;min-width:0;width:100%;margin:0;padding:6px 8px" value="${cf.trans||""}" oninput="attCfg()"></div></div>
   <div class="card" style="margin-top:10px;text-align:center"><div class="m">إجمالي المستحق</div><b id="ats" style="font-size:24px" class="ok">${f(al+(+cf.trans||0))}</b></div>`;
  }
@@ -835,6 +835,21 @@ function attImpDo(){const I=window.ATIMP;if(!I)return;window.ATIMP=null;let n=0;
  I.items.forEach(x=>{const cur=(AT.rec[x.id]||{})[x.k];if(!cur||(I.mode==="over"&&cur!==x.v))put(x.id,x.k,x.v)});
  if(I.add)Object.keys(I.unm).forEach(nm=>{let e=AT.emps.find(z=>atSame(z.name,nm));if(!e){e={id:"a"+Date.now()+"_"+AT.emps.length,name:nm,grp:""};AT.emps.push(e)}I.unm[nm].forEach(x=>{if(I.mode==="over"||!(AT.rec[e.id]||{})[x.k])put(e.id,x.k,x.v)})});
  cloudAtt();$("dlg").close();render();setTimeout(()=>alert("تم الاستيراد: "+n+" يوم"),100)}
+function attStep(d){
+ if(d>0){if(ATP===1)ATP=2;else{ATP=1;ATM++;if(ATM>11){ATM=0;ATY++}}}
+ else{if(ATP===2)ATP=1;else{ATP=2;ATM--;if(ATM<0){ATM=11;ATY--}}}
+ render();scrollTo(0,0)}
+(function(){let sx=0,sy=0,st=0,ok=false;
+ document.addEventListener("touchstart",function(e){
+  ok=false;if(view!=="attmonth"||e.touches.length!==1||document.querySelector("dialog[open]"))return;
+  const t=e.target;if(t&&t.closest&&t.closest("input,select,textarea"))return;
+  sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();ok=true},{passive:true});
+ document.addEventListener("touchend",function(e){
+  if(!ok)return;ok=false;if(view!=="attmonth")return;
+  const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+  if(Date.now()-st>700||Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8)return;
+  attStep(dx<0?-1:1)},{passive:true});
+})();
 function atGrouped(){const gs=[];AT.emps.forEach(e=>{const g=e.grp||"";let x=gs.find(y=>y.n===g);if(!x){x={n:g,l:[]};gs.push(x)}x.l.push(e)});gs.sort((a,b)=>(a.n===""?1:0)-(b.n===""?1:0));gs.forEach(g=>g.h=g.n||(gs.length>1?"موظفين":""));if(!gs.length)gs.push({n:"",h:"",l:[]});return gs}
 function atGroups(){return atGrouped().map(g=>g.n).filter(Boolean)}
 function atNm(s){return String(s).replace(/[\u064B-\u065F\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim()}
