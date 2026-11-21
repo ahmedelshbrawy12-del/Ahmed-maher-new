@@ -699,18 +699,39 @@ async function attXlsx(){const m=$("axm"),va=$("axf").value,vb=$("axt").value;
  m.textContent="";const tg=await SV.ask(name.replace(/\.xlsx$/,""),"xlsx",type);if(!tg)return;
  try{await SV.write(tg,blob);$("dlg").close()}catch(e){if(!(e&&e.name==="AbortError")){m.style.color="";m.textContent="تعذر حفظ الملف"}}}
 function atKind(v){const n=atDig(atNm(v)),ab=/غياب|غايب/.test(n)||n.split(" ").indexOf("غ")>=0;
- if(ab&&/(بدون|بلا|من غير)\s*(اذن|عذر)|غير مصرح/.test(n))return "unexc";
- if(/اجاز/.test(n))return /رسم|عيد|نسيم|اكتوبر|مولد|زواج|جواز|قومي|وطني|تحرير|ثوره|راس السنه|هجري|اسراء|معراج/.test(n)?"off":"leave";
- if(/^(6 |السادس من )?اكتوبر$|^(ال)?مولد( النبوي( الشريف)?)?$|^(ال)?عيد( .+)?$|^شم النسيم$|^(ال)?رسميه?$/.test(n))return "off";
+ if(/جمعه/.test(n)||(/(^| )بدل (راحه|سفر)/.test(n)&&!/نسيم|وقفه|عيد|فطر|اضحي|مولد|اكتوبر|رسم/.test(n)))return "fri";
+ if(/^خصم/.test(n)||(ab&&/(بدون|بلا|من غير)\s*(اذن|عذر)|غير مصرح/.test(n)))return "unexc";
+ if(/مرض/.test(n))return "sick";
+ if(/زواج|جواز/.test(n)&&(/اجاز/.test(n)||/^(زواج|جواز)$/.test(n)))return "wed";
+ if(/وقفه|نسيم/.test(n))return "off";
+ if(/اجاز/.test(n))return /رسم|عيد|فطر|اضحي|اكتوبر|مولد|قومي|وطني|تحرير|ثوره|راس السنه|هجري|اسراء|معراج/.test(n)?"off":"leave";
+ if(/^(بدل )?(6 |السادس من )?اكتوبر$|^(بدل )?(ال)?مولد( النبوي( الشريف)?)?$|^(بدل )?(ال)?عيد( .+)?$|^(ال)?(فطر|اضحي)$|^(ال)?رسميه?$/.test(n))return "off";
  if(ab)return "leave";
  return "site"}
-const AT_KL={leave:"إجازة عادية",off:"إجازة رسمية",unexc:"غياب بدون إذن"};
+const AT_KL={leave:"إجازة تخصم من الرصيد",off:"إجازة رسمية",sick:"إجازة مرضي",wed:"إجازة زواج",unexc:"غياب بدون إذن"};
+const AT_NOISE=new Set(["من","الي","في","ل","مطار","موقع","سفر","نزول","رجوع","عوده","وصول"]);
+function atNKey(v,c){const n=atDig(atNm(v)),tk=n.split(" ");
+ if(c==="off"){
+  if(/وقفه/.test(n))return /عرفه|عرفات/.test(n)?"وقفة عرفة":/فطر/.test(n)?"وقفة الفطر":/اضحي|كبير/.test(n)?"وقفة الأضحى":n;
+  if(/نسيم/.test(n))return "شم النسيم";
+  if(/مولد/.test(n))return "المولد";
+  if(/اكتوبر/.test(n))return "6 اكتوبر";
+  if(/فطر/.test(n))return "عيد الفطر";
+  if(/اضحي/.test(n))return "عيد الاضحى";
+  return tk.filter(t=>!/^(ال)?(اجازه|اجازات|بدل|راحه|رسميه|رسمي|يوم)$/.test(t)).join(" ")||n}
+ if(c==="wed")return "زواج";
+ if(c==="site")return tk.filter(t=>!AT_NOISE.has(t)&&!AT_NOISE.has(t.replace(/^ال/,""))).map(t=>t.replace(/^ال/,"")).sort().join(" ")||n;
+ return n}
+function atCanon(){const cnt={};
+ AT.emps.forEach(e=>{const r=AT.rec[e.id]||{};Object.keys(r).forEach(k=>{const v=String(r[k]||"").trim().replace(/\s+/g," ");if(!v)return;const c=atKind(v);if(c==="fri")return;const g=c+"|"+atNKey(v,c);(cnt[g]=cnt[g]||{})[v]=(cnt[g][v]||0)+1})});
+ const out={};Object.keys(cnt).forEach(g=>{let b=null,bc=0;Object.keys(cnt[g]).forEach(v=>{if(cnt[g][v]>bc||(cnt[g][v]===bc&&v.length<b.length)){b=v;bc=cnt[g][v]}});out[g]=b});return out}
+const atName=(v,c,M)=>M[c+"|"+atNKey(v,c)]||v;
 const atDmy=k=>k.split("-").reverse().join("/");
 function atDayNm(k){const d=new Date(k+"T00:00:00");return AT_DAY[(d.getDay()+1)%7]}
-function atCollect(va,vb){const o=[];AT.emps.forEach(e=>{const r=AT.rec[e.id]||{};Object.keys(r).sort().forEach(k=>{if(k>=va&&k<=vb){const v=String(r[k]||"").trim();if(v)o.push({e:e,k:k,v:v,c:atKind(v)})}})});return o}
+function atCollect(va,vb){const o=[];AT.emps.forEach(e=>{const r=AT.rec[e.id]||{};Object.keys(r).sort().forEach(k=>{if(k>=va&&k<=vb){const v=String(r[k]||"").trim();if(!v)return;const c=atKind(v);if(c==="fri"||(c!=="site"&&new Date(k+"T00:00:00").getDay()===5))return;o.push({e:e,k:k,v:v.replace(/\s+/g," "),c:c})}})});return o}
 function attSumDlg(){if(!AT.emps.length)return alert("أضف موظفين الأول");
  const n=new Date(),dd=n.getDate();let m=n.getMonth(),p=1;if(dd<=10){m--;p=2}else if(dd>=26)p=2;const q=new Date(n.getFullYear(),m,1),y=q.getFullYear();m=q.getMonth();const [a,b]=atP(y,m,p);
- dlg(`<h3>📈 ملخص المواقع والإجازات</h3><div class="m" style="margin-bottom:6px">اختار الفترة</div><input id="rxmo" type="month" value="${y}-${String(m+1).padStart(2,"0")}"><div class="row" style="margin-top:6px;flex-wrap:wrap"><button class="btn g" onclick="attRXP(1)">11 ← 25</button><button class="btn g" onclick="attRXP(2)">26 ← 10</button><button class="btn g" onclick="attRXP(3)">الشهر كله</button><button class="btn g" onclick="attRXP(4)">السنة كلها</button></div><div class="m" style="margin-top:8px">من</div><input id="rxf" type="date" value="${atFm(a)}"><div class="m" style="margin-top:6px">إلى</div><input id="rxt" type="date" value="${atFm(b)}"><div id="rxm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" onclick="attSumXlsx('sites')">📍 حضور المواقع</button><button class="btn" onclick="attSumXlsx('leave')">🏖️ الإجازات</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div><div class="m" style="margin-top:8px;font-size:12px;line-height:1.7">التصنيف من النص المكتوب في خانة المكان:<br>• إجازة عادية: إجازة، غياب، غياب بإذن، غ بإذن.<br>• إجازة رسمية: أعياد، شم النسيم، المولد النبوي، 6 أكتوبر، إجازة زواج، وأي إجازة رسمية.<br>• غياب بدون إذن: مكتوب فيه «بدون إذن».</div>`)}
+ dlg(`<h3>📈 ملخص المواقع والإجازات</h3><div class="m" style="margin-bottom:6px">اختار الفترة</div><input id="rxmo" type="month" value="${y}-${String(m+1).padStart(2,"0")}"><div class="row" style="margin-top:6px;flex-wrap:wrap"><button class="btn g" onclick="attRXP(1)">11 ← 25</button><button class="btn g" onclick="attRXP(2)">26 ← 10</button><button class="btn g" onclick="attRXP(3)">الشهر كله</button><button class="btn g" onclick="attRXP(4)">السنة كلها</button></div><div class="m" style="margin-top:8px">من</div><input id="rxf" type="date" value="${atFm(a)}"><div class="m" style="margin-top:6px">إلى</div><input id="rxt" type="date" value="${atFm(b)}"><div id="rxm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" onclick="attSumXlsx('sites')">📍 حضور المواقع</button><button class="btn" onclick="attSumXlsx('leave')">🏖️ الإجازات</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div><div class="m" style="margin-top:8px;font-size:12px;line-height:1.7">التصنيف من النص المكتوب في خانة المكان:<br>• تخصم من الرصيد: إجازة، غياب، غياب بإذن، غ بإذن، إجازة بإذن.<br>• رسمية: الأعياد والوقفات، شم النسيم، المولد النبوي، 6 أكتوبر، والإجازات الرسمية.<br>• مرضي، وزواج (إجازة زواج / جواز).<br>• غياب بدون إذن: خصم، خصم يوم، خصم يومين، غياب بدون إذن، غ بدون إذن.<br>• يوم الجمعة وبدل الجمعة وبدل راحة وبدل سفر مش بيتحسبوا إجازة ولا بيظهروا في المواقع، والعمل الفعلي يوم الجمعة بيتحسب في المواقع.<br>• الأسماء المتشابهة بتتوحد بأكتر كلمة متكررة.</div>`)}
 function attRXP(p){const v=$("rxmo").value;if(!v)return;const [y,m]=v.split("-").map(Number);let a,b;
  if(p===1||p===2)[a,b]=atP(y,m-1,p);else if(p===3){a=new Date(y,m-1,1);b=new Date(y,m,0)}else{a=new Date(y,0,1);b=new Date(y,11,31)}
  $("rxf").value=atFm(a);$("rxt").value=atFm(b)}
@@ -726,7 +747,7 @@ async function attSumXlsx(kind){const m=$("rxm"),va=$("rxf").value,vb=$("rxt").v
  try{
   const wb=new EJ.Workbook(),fill=c=>({type:"pattern",pattern:"solid",fgColor:{argb:c}}),bd={style:"thin",color:{argb:"FF000000"}},B={top:bd,bottom:bd,left:bd,right:bd};
   const sty=(c,f,bold,sz)=>{c.fill=fill(f);c.border=B;c.font={bold:!!bold,size:sz||12,name:"Arial"};c.alignment={horizontal:"center",vertical:"middle",wrapText:true}};
-  const GR="FFD9D9D9",BL="FF5B9BD5",LB="FF9DC3E6",WH="FFFFFFFF",rng="من "+atDmy(va)+" إلى "+atDmy(vb),GS=atGrouped();
+  const GR="FFD9D9D9",BL="FF5B9BD5",LB="FF9DC3E6",WH="FFFFFFFF",rng="من "+atDmy(va)+" إلى "+atDmy(vb),GS=atGrouped(),M=atCanon();
   const frame=(ws,labels)=>{const r1=ws.getRow(1),r2=ws.getRow(2);r1.height=labels.some(l=>l.length>12)?52:34;r2.height=26;
    const a1=r1.getCell(1);a1.value=rng;sty(a1,WH,false,11);
    labels.forEach((h,i)=>{const c=r1.getCell(i+2);c.value=h;sty(c,GR,true);sty(r2.getCell(i+2),LB,true)});
@@ -736,7 +757,7 @@ async function attSumXlsx(kind){const m=$("rxm"),va=$("rxf").value,vb=$("rxt").v
   const total=(ws,nc,from,end,sums,cols)=>{const rt=ws.getRow(end);rt.height=28;const lt=rt.getCell(1);lt.value="الإجمالي";sty(lt,LB,true);
    for(let i=2;i<=nc;i++){const c=rt.getCell(i);if(cols.indexOf(i)>=0){c.value={formula:"SUM("+ws.getCell(from,i).address+":"+ws.getCell(end-1,i).address+")",result:sums[i]||0}}sty(c,LB,true)}};
   if(kind==="sites"){
-   const sm={};rows.forEach(x=>{if(x.c==="site"){const k=atNm(x.v);if(!sm[k])sm[k]={n:x.v,t:0,c:{}};sm[k].t++;sm[k].c[x.e.id]=(sm[k].c[x.e.id]||0)+1}});
+   const sm={};rows.forEach(x=>{if(x.c==="site"){const k=atNKey(x.v,"site");if(!sm[k])sm[k]={n:atName(x.v,"site",M),t:0,c:{}};sm[k].t++;sm[k].c[x.e.id]=(sm[k].c[x.e.id]||0)+1}});
    const S=Object.values(sm).sort((a,b)=>b.t-a.t||(a.n<b.n?-1:1)),ns=S.length;
    const ws=wb.addWorksheet("حضور المواقع",{views:[{rightToLeft:true,state:"frozen",xSplit:1,ySplit:2}]});
    const nc=frame(ws,S.map(s=>s.n).concat(["إجمالي أيام الحضور","أيام إجازة / غياب"]));for(let i=2;i<=nc;i++)ws.getColumn(i).width=16;
@@ -747,21 +768,24 @@ async function attSumXlsx(kind){const m=$("rxm"),va=$("rxf").value,vb=$("rxt").v
    total(ws,nc,3,end,sums,Array.from({length:nc-1},(_,i)=>i+2));
    name="حضور-المواقع-"+va+"-إلى-"+vb;
   }else{
-   const lv=rows.filter(x=>x.c!=="site"),ord=new Map(AT.emps.map((e,i)=>[e.id,i]));lv.sort((a,b)=>ord.get(a.e.id)-ord.get(b.e.id)||(a.k<b.k?-1:1));
+   const KS=["leave","off","sick","wed","unexc"],lv=rows.filter(x=>x.c!=="site"),ord=new Map(AT.emps.map((e,i)=>[e.id,i]));lv.sort((a,b)=>ord.get(a.e.id)-ord.get(b.e.id)||(a.k<b.k?-1:1));
+   lv.forEach(x=>x.nm=atName(x.v,x.c,M));
    const per={};lv.forEach(x=>{(per[x.e.id]=per[x.e.id]||[]).push(x)});
    const w1=wb.addWorksheet("ملخص الإجازات",{views:[{rightToLeft:true,state:"frozen",xSplit:1,ySplit:2}]});
-   const nc=frame(w1,["إجازة عادية","إجازة رسمية","غياب بدون إذن","الإجمالي","تواريخ الإجازات"]);for(let i=2;i<=5;i++)w1.getColumn(i).width=16;w1.getColumn(6).width=46;
+   const nc=frame(w1,KS.map(k=>AT_KL[k]).concat(["الإجمالي","تواريخ الإجازات"])),tc=KS.length+2;
+   for(let i=2;i<tc+1;i++)w1.getColumn(i).width=17;w1.getColumn(tc+1).width=56;
    const sums={};
-   const end=emit(w1,nc,(r,e)=>{const L=per[e.id]||[],k={leave:0,off:0,unexc:0};L.forEach(x=>k[x.c]++);
-    [k.leave,k.off,k.unexc].forEach((v,i)=>{const c=r.getCell(2+i);c.value=v||null;sty(c,WH);sums[2+i]=(sums[2+i]||0)+v});
-    const s3=k.leave+k.off+k.unexc,ct=r.getCell(5);ct.value={formula:"SUM("+r.getCell(2).address+":"+r.getCell(4).address+")",result:s3};sty(ct,LB,true);sums[5]=(sums[5]||0)+s3;
-    const cd=r.getCell(6);cd.value=L.map(x=>atDmy(x.k)+" — "+atDayNm(x.k)+" — "+AT_KL[x.c]).join("\n")||null;sty(cd,WH);cd.alignment={horizontal:"right",vertical:"middle",wrapText:true};
-    r.height=Math.min(400,Math.max(34,L.length*20+10))});
-   total(w1,nc,3,end,sums,[2,3,4,5]);
+   const end=emit(w1,nc,(r,e)=>{const L=per[e.id]||[],k={};KS.forEach(z=>k[z]=0);L.forEach(x=>k[x.c]++);
+    KS.forEach((z,i)=>{const c=r.getCell(2+i);c.value=k[z]||null;sty(c,WH);sums[2+i]=(sums[2+i]||0)+k[z]});
+    const s3=L.length,ct=r.getCell(tc);ct.value={formula:"SUM("+r.getCell(2).address+":"+r.getCell(tc-1).address+")",result:s3};sty(ct,LB,true);sums[tc]=(sums[tc]||0)+s3;
+    const cd=r.getCell(tc+1);cd.value=L.map(x=>atDayNm(x.k)+" - "+x.nm+" - "+AT_KL[x.c]+" - "+atDmy(x.k)).join("\n")||null;sty(cd,WH,false,9);cd.alignment={horizontal:"right",vertical:"middle",wrapText:true};
+    r.height=Math.min(400,Math.max(34,L.length*14+10))});
+   total(w1,nc,3,end,sums,Array.from({length:tc-1},(_,i)=>i+2));
    const w2=wb.addWorksheet("تفاصيل الإجازات",{views:[{rightToLeft:true,state:"frozen",xSplit:0,ySplit:1}]});
-   ["م","الموظف","تاريخ الإجازة","اليوم","النوع","المكتوب في الخانة"].forEach((h,i)=>{const c=w2.getCell(1,i+1);c.value=h;sty(c,GR,true)});w2.getRow(1).height=30;
-   [6,32,16,14,18,30].forEach((w,i)=>w2.getColumn(i+1).width=w);
-   lv.forEach((x,i)=>{const row=w2.getRow(i+2);row.height=26;[i+1,x.e.name,atDmy(x.k),atDayNm(x.k),AT_KL[x.c],x.v].forEach((v,j)=>{const c=row.getCell(j+1);c.value=v;sty(c,x.c==="off"?"FFFFF2CC":x.c==="unexc"?"FFFFC7CE":WH,j===1)})});
+   ["م","الموظف","تاريخ الإجازة","اليوم","اسم الإجازة","النوع","المكتوب في الخانة"].forEach((h,i)=>{const c=w2.getCell(1,i+1);c.value=h;sty(c,GR,true)});w2.getRow(1).height=30;
+   [6,32,16,14,24,24,28].forEach((w,i)=>w2.getColumn(i+1).width=w);
+   const CL={off:"FFFFF2CC",unexc:"FFFFC7CE",sick:"FFDDEBF7",wed:"FFE2EFDA",leave:WH};
+   lv.forEach((x,i)=>{const row=w2.getRow(i+2);row.height=26;[i+1,x.e.name,atDmy(x.k),atDayNm(x.k),x.nm,AT_KL[x.c],x.v].forEach((v,j)=>{const c=row.getCell(j+1);c.value=v;sty(c,CL[x.c]||WH,j===1)})});
    name="إجازات-"+va+"-إلى-"+vb;
   }
   blob=new Blob([await wb.xlsx.writeBuffer()],{type});
@@ -884,7 +908,7 @@ function attPick(){
 function attSw(id){ATE=id;$("dlg").close();render();scrollTo(0,0)}
 function attOpen(id){ATE=id;ATY=new Date().getFullYear();view="attyear";render();scrollTo(0,0)}
 function attDay(k){const cur=(AT.rec[ATE]||{})[k]||"",[pa,pb]=atP(ATY,ATM,ATP),mn=atFm(pa),mx=atFm(pb);
- dlg(`<h3>${k.split("-").reverse().join("/")}</h3><input id="atp" list="atl" placeholder="المكان (مثال: مطار العريش)" value="${esc(cur)}"><datalist id="atl">${atPlaces().concat(["إجازة","إجازة رسمية","غياب بإذن","غياب بدون إذن"].filter(x=>atPlaces().indexOf(x)<0)).map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
+ dlg(`<h3>${k.split("-").reverse().join("/")}</h3><input id="atp" list="atl" placeholder="المكان (مثال: مطار العريش)" value="${esc(cur)}"><datalist id="atl">${atPlaces().concat(["إجازة","غ بإذن","إجازة رسمية","إجازة مرضي","إجازة زواج","غياب بدون إذن"].filter(x=>atPlaces().indexOf(x)<0)).map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
  <div class="m" style="margin-top:8px">تطبيق على الأيام من - إلى</div><div class="row"><input id="atf" type="date" min="${mn}" max="${mx}" value="${k}"><input id="att2" type="date" min="${mn}" max="${mx}" value="${k}"></div>
  <div class="row" style="margin-top:8px"><button class="btn" onclick="attSave(1)">حفظ</button><button class="btn r" onclick="attSave(0)">مسح</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 function attSave(set){const v=$("atp").value.trim(),[pa,pb]=atP(ATY,ATM,ATP),mn=atFm(pa),mx=atFm(pb);
