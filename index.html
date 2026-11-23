@@ -881,13 +881,29 @@ function atParseSheet(wb,va,vb){let best=null;
  if(fc<2)return null;
  const ws=best.ws,last=Math.min(ws.rowCount,best.r+400);
  let nc=1,bs=-1;for(let c=1;c<fc;c++){let sc=0;for(let r=best.r+1;r<=last;r++){const t=atCellTxt(ws.getRow(r).getCell(c));if(t&&AT.emps.some(e=>atSame(e.name,t)))sc++}if(sc>bs){bs=sc;nc=c}}
- const items=[],unm={};
+ const items=[],unm={},cfgs=[],ucfg={},hd={rate:0,days:0,trans:0,total:0,tc:[]},isDay={};best.cols.forEach(x=>{isDay[x.c]=1});
+ for(let c=fc;c<=Math.min(ws.columnCount,600);c++){if(isDay[c])continue;
+  let tx='';for(let r=1;r<=best.r;r++){const t=atCellTxt(ws.getRow(r).getCell(c));if(t){tx=t;break}}
+  const n=atNm(tx);if(!n)continue;
+  if(/عدد.*ايام|ايام.*بدل/.test(n)){if(!hd.days)hd.days=c}
+  else if(/(اجمالي|مجموع) ?البدلات?/.test(n)){if(!hd.total)hd.total=c}
+  else if(/^(قيمه|سعر) ?البدل$|^بدل ?يومي$/.test(n)){if(!hd.rate)hd.rate=c}
+  else if(/^قيمه ?البدلات$/.test(n))hd.tc.push(c);
+  else if(/انتقالات|الانتقال|مواصلات/.test(n)){if(!hd.trans)hd.trans=c}}
+ if(hd.tc.length>=2){if(!hd.rate)hd.rate=hd.tc[0];if(!hd.total)hd.total=hd.tc[1]}else if(hd.tc.length===1&&!hd.total)hd.total=hd.tc[0];
+ const hasCols=!!(hd.rate||hd.days||hd.trans||hd.total);
  for(let r=best.r+1;r<=last;r++){const row=ws.getRow(r),name=atCellTxt(row.getCell(nc));if(!name||/اجمال|مجموع|total/i.test(atNm(name)))continue;
   const vals=[];map.forEach(x=>{const v=atCellTxt(row.getCell(x.c));if(v&&v!=="-"&&v!=="—"&&v!=="0")vals.push({k:x.k,v:v})});
-  if(!vals.length)continue;
+  const nv=c=>{if(!c)return null;const t=atDig(atCellTxt(row.getCell(c))).replace(/[,\u066C\s]/g,"");if(t==="")return null;const x=+t;return isFinite(x)&&x!==0?x:null};
+  const cf={rate:nv(hd.rate),days:nv(hd.days),trans:nv(hd.trans)},tot=nv(hd.total);
+  if(cf.rate==null&&tot!=null&&cf.days>0)cf.rate=Math.round(tot/cf.days*10000)/10000;
+  if(cf.days==null&&tot!=null&&cf.rate>0)cf.days=Math.round(tot/cf.rate*100)/100;
+  const hasCf=cf.rate!=null||cf.days!=null||cf.trans!=null;
+  if(!vals.length&&!hasCf)continue;
   const e=AT.emps.find(z=>atSame(z.name,name));
-  if(e)vals.forEach(x=>items.push({id:e.id,name:e.name,k:x.k,v:x.v}));else(unm[name]=unm[name]||[]).push(...vals)}
- return{items:items,unm:unm,sheet:ws.name,days:map.length,outside:best.cols.length-map.length}}
+  if(e){vals.forEach(x=>items.push({id:e.id,name:e.name,k:x.k,v:x.v}));if(hasCf)cfgs.push({id:e.id,name:e.name,rate:cf.rate,days:cf.days,trans:cf.trans})}
+  else{(unm[name]=unm[name]||[]).push(...vals);if(hasCf)ucfg[name]=cf}}
+ return{items:items,unm:unm,cfg:cfgs,ucfg:ucfg,hasCols:hasCols,sheet:ws.name,days:map.length,outside:best.cols.length-map.length}}
 
 function attImpDlg(){
  const n=new Date(),dd=n.getDate();let m=n.getMonth(),p=1;if(dd<=10){m--;p=2}else if(dd>=26)p=2;const q=new Date(n.getFullYear(),m,1),y=q.getFullYear();m=q.getMonth();const [a,b]=atP(y,m,p);
@@ -896,7 +912,7 @@ function attImpDlg(){
  <div class="m" style="margin-top:8px">2) الفترة اللي عاوز تستوردها</div><input id="rxmo" type="month" value="${y}-${String(m+1).padStart(2,"0")}"><div class="row" style="margin-top:6px;flex-wrap:wrap"><button class="btn g" onclick="attRXP(1)">11 ← 25</button><button class="btn g" onclick="attRXP(2)">26 ← 10</button><button class="btn g" onclick="attRXP(3)">الشهر كله</button></div><div class="m" style="margin-top:8px">من</div><input id="rxf" type="date" value="${atFm(a)}"><div class="m" style="margin-top:6px">إلى</div><input id="rxt" type="date" value="${atFm(b)}">
  <div class="m" style="margin-top:8px">3) لو اليوم مسجل قبل كده</div><select id="imm" style="${sl}"><option value="fill">أسيبه زي ما هو (أملأ الأيام الفاضية بس)</option><option value="over">أستبدله بالمكتوب في الإكسل</option></select>
  <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px"><input id="ima" type="checkbox" style="width:auto;margin:0"> إضافة الموظفين اللي مش موجودين في البرنامج</label>
- <div class="m" style="font-size:12px;line-height:1.7">الشيت لازم يكون شكله زي شيت تصدير الحضور: أسماء الموظفين في أول عمود، وأيام الشهر (رقم اليوم أو يوم/شهر) في صف العناوين، والمكان مكتوب تحت كل يوم.</div></div>
+ <div class="m" style="font-size:12px;line-height:1.7">الشيت لازم يكون شكله زي شيت تصدير الحضور: أسماء الموظفين في أول عمود، وأيام الشهر (رقم اليوم أو يوم/شهر) في صف العناوين، والمكان مكتوب تحت كل يوم. ولو الشيت فيه أعمدة «عدد الأيام المستحق فيها بدل» و«قيمة البدل» و«الانتقالات» بتتقرا كمان (لفترة بدل واحدة).</div></div>
  <div id="rxm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button class="btn" onclick="attImpGo()">معاينة</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 async function attImpGo(){const m=$("rxm"),va=$("rxf").value,vb=$("rxt").value,f=$("imf").files[0];
  if(!f)return m.textContent="اختار ملف الإكسل الأول";
@@ -910,15 +926,22 @@ async function attImpGo(){const m=$("rxm"),va=$("rxf").value,vb=$("rxt").value,f
  if(!res)return m.textContent="ملقيتش صف أيام الشهر أو عمود الأسماء في الشيت";
  let nw=0,df=0,sm=0;const ids={};
  res.items.forEach(x=>{const cur=(AT.rec[x.id]||{})[x.k];ids[x.id]=1;if(!cur)nw++;else if(cur!==x.v)df++;else sm++});
- const un=Object.keys(res.unm),unDays=un.reduce((a,k)=>a+res.unm[k].length,0),willWrite=nw+(mode==="over"?df:0)+(add?unDays:0);
- if(!willWrite)return m.textContent="مفيش حاجة جديدة تتسجل في الفترة دي"+(un.length?" (فيه موظفين مش موجودين: "+un.length+")":"");
- window.ATIMP={items:res.items,unm:res.unm,mode:mode,add:add};
- dlg(`<h3>📥 معاينة الاستيراد</h3><div class="m" style="line-height:1.9">الشيت: <b>${esc(res.sheet)}</b><br>الفترة: ${atDmy(va)} ← ${atDmy(vb)} (${res.days} يوم)<br>موظفين متطابقين: <b>${Object.keys(ids).length}</b><br>أيام جديدة هتتسجل: <b class="ok">${nw}</b><br>أيام مسجلة قبل كده بقيمة مختلفة: <b>${df}</b> ${mode==="over"?"(هتتغير)":"(هتفضل زي ما هي)"}<br>أيام مطابقة: ${sm}${res.outside?`<br>أيام في الشيت خارج الفترة: ${res.outside}`:""}${un.length?`<br><span class="bad">موظفين مش موجودين في البرنامج (${un.length}): ${un.slice(0,8).map(esc).join("، ")}${un.length>8?" ...":""}</span> ${add?"(هيتضافوا)":"(هيتخطوا)"}`:""}</div><div class="row" style="margin-top:10px"><button class="btn" onclick="attImpDo()">✅ تأكيد الاستيراد</button><button class="btn g" onclick="window.ATIMP=null;$('dlg').close()">إلغاء</button></div>`)}
+ const kyo={};for(let d=new Date(va+"T00:00:00"),de=new Date(vb+"T00:00:00");d<=de;d.setDate(d.getDate()+1))kyo[atPK(d)]=1;
+ const kk=Object.keys(kyo),cfgKey=kk.length===1?kk[0]:null;
+ const cfW=(c,id)=>{const o=(((AT.cfg||{})[id]||{})[cfgKey])||{};let w=0;["rate","days","trans"].forEach(k=>{if(c[k]!=null&&(mode==="over"?o[k]!==c[k]:!(+o[k])))w++});return w};
+ let cfN=0,cfE=0;if(cfgKey){res.cfg.forEach(c=>{const w=cfW(c,c.id);if(w){cfN+=w;cfE++}});if(add)Object.keys(res.ucfg).forEach(nm=>{const w=cfW(res.ucfg[nm],"__new");if(w){cfN+=w;cfE++}})}
+ const un=Object.keys(res.unm),unDays=un.reduce((a,k)=>a+res.unm[k].length,0),willWrite=nw+(mode==="over"?df:0)+(add?unDays:0)+cfN;
+ if(!willWrite)return m.textContent="مفيش حاجة جديدة تتسجل في الفترة دي"+(un.length?" (فيه موظفين مش موجودين: "+un.length+")":"")+(res.hasCols&&!cfgKey?" — قيم البدل والانتقالات ما اتستوردتش لأن الفترة فيها أكتر من فترة بدل (اختار 11←25 أو 26←10)":"");
+ window.ATIMP={items:res.items,unm:res.unm,cfg:res.cfg,ucfg:res.ucfg,cfgKey:cfgKey,mode:mode,add:add};
+ dlg(`<h3>📥 معاينة الاستيراد</h3><div class="m" style="line-height:1.9">الشيت: <b>${esc(res.sheet)}</b><br>الفترة: ${atDmy(va)} ← ${atDmy(vb)} (${res.days} يوم)<br>موظفين متطابقين: <b>${Object.keys(ids).length}</b><br>أيام جديدة هتتسجل: <b class="ok">${nw}</b><br>أيام مسجلة قبل كده بقيمة مختلفة: <b>${df}</b> ${mode==="over"?"(هتتغير)":"(هتفضل زي ما هي)"}<br>أيام مطابقة: ${sm}${res.outside?`<br>أيام في الشيت خارج الفترة: ${res.outside}`:""}${res.hasCols?(cfgKey?`<br>قيمة البدل / أيام البدل / الانتقالات: <b class="ok">${cfE}</b> موظف ${mode==="over"?"(هتتحدّث)":"(هتتملي الفاضي بس)"}`:`<br><span class="bad">قيم البدل والانتقالات مش هتتستورد: الفترة فيها أكتر من فترة بدل، اختار 11←25 أو 26←10.</span>`):""}${un.length?`<br><span class="bad">موظفين مش موجودين في البرنامج (${un.length}): ${un.slice(0,8).map(esc).join("، ")}${un.length>8?" ...":""}</span> ${add?"(هيتضافوا)":"(هيتخطوا)"}`:""}</div><div class="row" style="margin-top:10px"><button class="btn" onclick="attImpDo()">✅ تأكيد الاستيراد</button><button class="btn g" onclick="window.ATIMP=null;$('dlg').close()">إلغاء</button></div>`)}
 function attImpDo(){const I=window.ATIMP;if(!I)return;window.ATIMP=null;let n=0;
  const put=(id,k,v)=>{if(!AT.rec[id])AT.rec[id]={};AT.rec[id][k]=v;n++};
+ let n2=0;const putCfg=(id,c)=>{if(!I.cfgKey||!c)return;if(!AT.cfg)AT.cfg={};if(!AT.cfg[id])AT.cfg[id]={};const o=AT.cfg[id][I.cfgKey]||(AT.cfg[id][I.cfgKey]={rate:0,days:0,trans:0});
+  ["rate","days","trans"].forEach(k=>{if(c[k]!=null&&(I.mode==="over"?o[k]!==c[k]:!(+o[k]))){o[k]=c[k];n2++}})};
  I.items.forEach(x=>{const cur=(AT.rec[x.id]||{})[x.k];if(!cur||(I.mode==="over"&&cur!==x.v))put(x.id,x.k,x.v)});
- if(I.add)Object.keys(I.unm).forEach(nm=>{let e=AT.emps.find(z=>atSame(z.name,nm));if(!e){e={id:"a"+Date.now()+"_"+AT.emps.length,name:nm,grp:""};AT.emps.push(e)}I.unm[nm].forEach(x=>{if(I.mode==="over"||!(AT.rec[e.id]||{})[x.k])put(e.id,x.k,x.v)})});
- cloudAtt();$("dlg").close();render();setTimeout(()=>alert("تم الاستيراد: "+n+" يوم"),100)}
+ (I.cfg||[]).forEach(c=>putCfg(c.id,c));
+ if(I.add)Object.keys(I.unm).forEach(nm=>{let e=AT.emps.find(z=>atSame(z.name,nm));if(!e){e={id:"a"+Date.now()+"_"+AT.emps.length,name:nm,grp:""};AT.emps.push(e)}I.unm[nm].forEach(x=>{if(I.mode==="over"||!(AT.rec[e.id]||{})[x.k])put(e.id,x.k,x.v)});if(I.ucfg&&I.ucfg[nm])putCfg(e.id,I.ucfg[nm])});
+ atLocal();cloudAtt();$("dlg").close();render();setTimeout(()=>alert("تم الاستيراد: "+n+" يوم"+(n2?"، و"+n2+" قيمة (بدل / أيام / انتقالات)":"")),100)}
 function attStep(d){
  if(d>0){if(ATP===1)ATP=2;else{ATP=1;ATM++;if(ATM>11){ATM=0;ATY++}}}
  else{if(ATP===2)ATP=1;else{ATP=2;ATM--;if(ATM<0){ATM=11;ATY--}}}
