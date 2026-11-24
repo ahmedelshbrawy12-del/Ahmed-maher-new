@@ -133,8 +133,8 @@ let P={inc:[],exp:[]};try{const x=JSON.parse(localStorage.getItem("custpers")||"
 const LEG={S:JSON.parse(JSON.stringify(S)),P:JSON.parse(JSON.stringify(P))};
 const pbal=()=>(P.inc||[]).reduce((a,e)=>a+(+e.amt||0),0);
 const pspent=()=>(P.exp||[]).reduce((a,e)=>a+(+e.amt||0),0);
-const saveP=()=>cloudPers();
-const save=()=>cloudSites();
+const saveP=()=>{if(VIEWU)return;cloudPers()};
+const save=()=>{if(VIEWU)return;cloudSites()};
 function imgBlock(s){const L=s.expenses.filter(e=>e.img||IMG[e.id]);if(!L.length)return"";
  return `<div class="im"><div class="ih">صور الفواتير - ${esc(s.name)}</div><div class="ig">${L.map(e=>`<figure><img src="${IMG[e.id]||e.img}" onclick="showImg('${e.id}')"><figcaption>${esc(e.desc)} - ${f(e.amt)}</figcaption></figure>`).join("")}</div></div>`}
 function siteBlock(s){
@@ -188,6 +188,7 @@ function navRestore(){let x=null;try{x=JSON.parse(sessionStorage.getItem("cust_n
  if((v==="site"||v==="sreport")&&x.c){view="home";PEND={v:v,c:x.c};setTimeout(function(){PEND=null},10000)}}
 function render(){try{if(PEND&&S&&Array.isArray(S.sites)){const s0=S.sites.find(z=>z.id===PEND.c);if(s0){view=PEND.v;cur=PEND.c;PEND=null}}render0();navSave();typeof stkRefresh==="function"&&stkRefresh()}catch(e){console.warn(e);if(window.__show)__show("RENDER: "+e.message)}}
 function render0(){
+ if(VIEWU&&(view==="personal"||view==="notes"||view==="note"||view==="p2p"))view="main";
  document.body.classList.toggle("rep",view==="report"||view==="sreport");p2Show();typeof slShow==="function"&&slShow();typeof pmShow==="function"&&pmShow();
  const A=$("app"),T=$("tot");
  if(!Array.isArray(S.sites))S.sites=[];
@@ -195,8 +196,8 @@ function render0(){
  if(view==="main"){
    const pe=pspent(),rb=pbal()-pe,mine=rb-(tc-ts);
    A.innerHTML=`<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 175px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))"><div style="display:flex;align-items:center;gap:10px;margin:6px 0 14px"><h1 style="margin:0">الرئيسية</h1><button class="btn g" style="padding:4px 10px;margin:0" title="تحديث" onclick="doRefresh()">🔄</button></div><div style="margin:auto 0"><div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${S.sites.length} موقع</span></span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
-   <div class="card site" onclick="view='proj';render();scrollTo(0,0)"><div class="row"><span class="n">🏗️ حالة المواقع</span><span class="m">${(PJ.items||[]).length} موقع</span></div></div><div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div><div class="card site" onclick="view='att';render();scrollTo(0,0)"><div class="row"><span class="n">📅 الحضور والتمام</span><span class="m">${AT.emps.length} موظف</span></div></div>${isMgr()&&!VIEWU?`<div class="card site" onclick="usOpen()"><div class="row"><span class="n">👥 فريقي</span><span class="m">${UL.m.length} موظف</span></div></div>`:""}<div class="card site" onclick="view='p2p';render();scrollTo(0,0)"><div class="row"><span class="n">🖼️ Photo to Pdf</span><span class="m">على الجهاز فقط</span></div></div>`+
-   `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(dispName(ME.email))+" · v10"+(isMgr()?" · مدير":""):""}</div></div>`;
+   <div class="card site" onclick="view='proj';render();scrollTo(0,0)"><div class="row"><span class="n">🏗️ حالة المواقع</span><span class="m">${(PJ.items||[]).length} موقع</span></div></div>${VIEWU?"":`<div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div>`}<div class="card site" onclick="view='att';render();scrollTo(0,0)"><div class="row"><span class="n">📅 الحضور والتمام</span><span class="m">${AT.emps.length} موظف</span></div></div>${isMgr()&&!VIEWU?`<div class="card site" onclick="usOpen()"><div class="row"><span class="n">👥 فريقي</span><span class="m">${UL.m.length} موظف</span></div></div>`:""}${VIEWU?"":`<div class="card site" onclick="view='p2p';render();scrollTo(0,0)"><div class="row"><span class="n">🖼️ Photo to Pdf</span><span class="m">على الجهاز فقط</span></div></div>`}`+
+   `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(dispName(ME.email))+" · v13"+(isMgr()?" · مدير":""):""}</div></div>`;
    T.style.display="none";
   }else if(view==="users"){T.style.display="none";
    const mm=UL.m,nm=x=>esc(x.name||dispName(x.email))+(x.name?` <span class="m" dir="ltr">${esc(dispName(x.email))}</span>`:"");
@@ -263,8 +264,8 @@ addEventListener("afterprint",()=>{document.title="تصفية العهد"});
 let DB=null;const IMG={};
 function idbOpen(){return new Promise(r=>{try{const q=indexedDB.open("custimg",1);q.onupgradeneeded=()=>q.result.createObjectStore("i");q.onsuccess=()=>{DB=q.result;r()};q.onerror=()=>r();q.onblocked=()=>r()}catch(e){r()}})}
 function idbAll(){return new Promise(r=>{if(!DB)return r();try{const q=DB.transaction("i").objectStore("i").openCursor();q.onsuccess=()=>{const c=q.result;if(c){IMG[c.key]=c.value;c.continue()}else r()};q.onerror=()=>r()}catch(e){r()}})}
-function idbPut(k,v){cloudImg(k,v);return new Promise(r=>{if(!DB)return r(false);try{const tx=DB.transaction("i","readwrite");tx.objectStore("i").put(v,k);tx.oncomplete=()=>r(true);tx.onerror=tx.onabort=()=>r(false)}catch(e){r(false)}})}
-function idbDel(k){cloudImgDel(k);try{if(DB)DB.transaction("i","readwrite").objectStore("i").delete(k)}catch(e){}delete IMG[k]}
+function idbPut(k,v){if(VIEWU)return Promise.resolve(false);cloudImg(k,v);return new Promise(r=>{if(!DB)return r(false);try{const tx=DB.transaction("i","readwrite");tx.objectStore("i").put(v,k);tx.oncomplete=()=>r(true);tx.onerror=tx.onabort=()=>r(false)}catch(e){r(false)}})}
+function idbDel(k){if(VIEWU)return;cloudImgDel(k);try{if(DB)DB.transaction("i","readwrite").objectStore("i").delete(k)}catch(e){}delete IMG[k]}
 function findExp(id){return S.sites.flatMap(s=>s.expenses).find(x=>x.id===id)}
 function editExp(id){askPin("edit",id)}
 function editExp2(id){const e=findExp(id);if(!e)return;const has=!!(e.img||IMG[id]);
@@ -368,7 +369,7 @@ setTimeout(function(){if(!window.CLOUD){const l=$("lerr");if(l)l.textContent="ت
 
 
 // ===== إدارة الموظفين =====
-let VIEWU=null,UL={m:[],r:[],a:[]};
+var VIEWU=null;let UL={m:[],r:[],a:[]};
 const UDOM="@u.tasfiya.app";
 function toEmail(v){v=String(v||"").trim();return v.indexOf("@")<0?v.toLowerCase()+UDOM:v}
 function dispName(e){e=String(e||"");return e.toLowerCase().endsWith(UDOM)?e.slice(0,-UDOM.length):e}
@@ -407,15 +408,15 @@ function usBack(){VIEWU=null;CLOUD.viewAs(null);for(const k in IMG)delete IMG[k]
 
 // ===== Firebase glue =====
 function cerr(e){console.warn(e);if(e&&e.code==="permission-denied")alert("مفيش صلاحية للحفظ، راجع قواعد Firestore")}
-function cloudSites(){if(!ME||!window.CLOUD)return;const ids={};
+function cloudSites(){if(VIEWU)return;if(!ME||!window.CLOUD)return;const ids={};
  S.sites.forEach(s=>{ids[s.id]=1;const j=JSON.stringify(s);if(LAST[s.id]!==j){LAST[s.id]=j;try{CLOUD.setSite(JSON.parse(j)).catch(cerr)}catch(e){cerr(e)}}});
  Object.keys(LAST).forEach(id=>{if(!ids[id]){delete LAST[id];try{CLOUD.delSite(id).catch(cerr)}catch(e){cerr(e)}}})}
-function cloudPers(){if(!ME||!window.CLOUD)return;try{CLOUD.setPers({inc:P.inc,exp:P.exp}).catch(cerr)}catch(e){cerr(e)}}
+function cloudPers(){if(VIEWU)return;if(!ME||!window.CLOUD)return;try{CLOUD.setPers({inc:P.inc,exp:P.exp}).catch(cerr)}catch(e){cerr(e)}}
 function reimg(u,mx,q){return new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,mx/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);r(c.toDataURL("image/jpeg",q))};i.onerror=()=>r(u);i.src=u})}
-async function cloudImg(k,v){if(!ME||!window.CLOUD||!v)return;try{if(v.length>900000)v=await reimg(v,1200,.6);if(v.length>980000)v=await reimg(v,900,.5);await CLOUD.putImg(k,v)}catch(e){cerr(e)}}
-function cloudImgDel(k){if(!ME||!window.CLOUD)return;try{CLOUD.delImg(k).catch(cerr)}catch(e){cerr(e)}}
+async function cloudImg(k,v){if(VIEWU)return;if(!ME||!window.CLOUD||!v)return;try{if(v.length>900000)v=await reimg(v,1200,.6);if(v.length>980000)v=await reimg(v,900,.5);await CLOUD.putImg(k,v)}catch(e){cerr(e)}}
+function cloudImgDel(k){if(VIEWU)return;if(!ME||!window.CLOUD)return;try{CLOUD.delImg(k).catch(cerr)}catch(e){cerr(e)}}
 async function bgImgs(){try{const o=await CLOUD.allImgs();let n=0;for(const k in o){if(!IMG[k]){IMG[k]=o[k];n++}}if(n)render()}catch(e){console.warn(e)}}
-async function migrate(){await IDBREADY;let mg=null;try{mg=localStorage.getItem("custmig")}catch(e){}
+async function migrate(){if(VIEWU)return;await IDBREADY;let mg=null;try{mg=localStorage.getItem("custmig")}catch(e){}
  const has=LEG.S.sites.length||LEG.P.exp.length||LEG.P.inc.length;
  if((mg&&mg!==ME.uid)||!has){render();return}
  S.sites=normSites(JSON.parse(JSON.stringify(LEG.S.sites)));
@@ -433,7 +434,7 @@ window.onPers=function(o){if(!ME)return;
  if(!o){PERS_INIT=true;return}
  PERS_INIT=true;P.inc=Array.isArray(o.inc)?o.inc.filter(okId):[];P.exp=Array.isArray(o.exp)?o.exp.filter(okId):[];render()};
 window.onAuth=function(u){
- VIEWU=null;window._pend=null;if(typeof vbar==="function")vbar();
+ VIEWU=null;try{CLOUD.viewAs(null)}catch(e){}window._pend=null;if(typeof vbar==="function")vbar();
  clearTimeout(window._bt);document.body.classList.remove("booting","slow");
  S={sites:[]};P={inc:[],exp:[]};LAST={};SYNC=false;PERS_INIT=false;view="main";cur=null;PEND=null;
  if(typeof notesReset==="function")notesReset(u);if(typeof pjReset==="function")pjReset(u);if(typeof attReset==="function")attReset(u);
@@ -495,9 +496,10 @@ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}
 let db;try{db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})})}catch(e){db=getFirestore(app)}
 let uid=null,un=[],viewUid=null,roleUn=null,okUid=null;
 const U=(...p)=>["users",viewUid||uid,...p];
-const sd=(r,o,m)=>viewUid?Promise.resolve():(m?setDoc(r,o,m):setDoc(r,o));
-const dd=r=>viewUid?Promise.resolve():deleteDoc(r);
-const attRef=()=>doc(db,...U("meta","att"));
+const RO=()=>!!viewUid||(typeof VIEWU!=="undefined"&&!!VIEWU);
+const sd=(r,o,m)=>RO()?Promise.resolve():(m?setDoc(r,o,m):setDoc(r,o));
+const dd=r=>RO()?Promise.resolve():deleteDoc(r);
+const attRef=()=>window.TID?doc(db,"teams",window.TID,"attendance","main"):null;
 window.CLOUD={
  login:(e,p)=>signInWithEmailAndPassword(auth,e,p),
  signup:(e,p)=>createUserWithEmailAndPassword(auth,e,p),
@@ -510,7 +512,13 @@ window.CLOUD={
  setPers:o=>sd(doc(db,...U("meta","personal")),o),
  setNotes:o=>sd(doc(db,...U("meta","notes")),o),
   setProj:o=>sd(doc(db,...U("meta","projects")),o),
- setAtt:o=>sd(attRef(),o),
+ setAtt:o=>{const r=attRef();return r?sd(r,o):Promise.resolve()},
+ async ownAtt(){const d=await getDoc(doc(db,"users",uid,"meta","att"));return d.exists()?d.data():null},
+ async teamAtts(){const out=[],s=await getDocs(query(collection(db,"members"),where("mgr","==",uid)));
+  const ms=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(x.at||0)-(y.at||0));
+  for(const m of ms){const d=await getDoc(doc(db,"users",m.id,"meta","att"));if(d.exists())out.push(d.data())}
+  return out},
+ async createAtt(o){if(RO())return false;const r=attRef();if(!r)return false;const x=await getDoc(r);if(x.exists())return false;await setDoc(r,o);return true},
  async oldAtt(){const d=await getDoc(doc(db,...U("meta","attendance")));return d.exists()?d.data():null},
  putImg:(id,d)=>sd(doc(db,...U("images",id)),{d}),
  setPm:(k,o)=>sd(doc(db,...U("pmdata",k)),o),
@@ -519,11 +527,11 @@ window.CLOUD={
  async allImgs(){const o={},s=await getDocs(collection(db,...U("images")));s.forEach(x=>o[x.id]=x.data().d);return o},
  start(){this.stop();
   un.push(onSnapshot(collection(db,...U("sites")),s=>{if(s.metadata.hasPendingWrites)return;window.onSites(s.docs.map(d=>d.data()),s.metadata.fromCache)},e=>console.warn(e)));
-  un.push(onSnapshot(doc(db,...U("meta","personal")),d=>{if(d.metadata.hasPendingWrites)return;window.onPers(d.exists()?d.data():null)},e=>console.warn(e)));
-  un.push(onSnapshot(doc(db,...U("meta","notes")),d=>{if(d.metadata.hasPendingWrites)return;if(window.onNotes)window.onNotes(d.exists()?d.data():null)},e=>console.warn(e)));
+  if(!viewUid)un.push(onSnapshot(doc(db,...U("meta","personal")),d=>{if(d.metadata.hasPendingWrites)return;window.onPers(d.exists()?d.data():null)},e=>console.warn(e)));
+  if(!viewUid)un.push(onSnapshot(doc(db,...U("meta","notes")),d=>{if(d.metadata.hasPendingWrites)return;if(window.onNotes)window.onNotes(d.exists()?d.data():null)},e=>console.warn(e)));
   un.push(onSnapshot(doc(db,...U("meta","projects")),d=>{if(d.metadata.hasPendingWrites)return;if(window.onProj)window.onProj(d.exists()?d.data():null)},e=>console.warn(e)));
   un.push(onSnapshot(collection(db,...U("pmdata")),s=>{if(window.onPm){const o={};s.docs.forEach(d=>{const x=d.data();if(x&&typeof x.k==="string"&&typeof x.s==="string")o[x.k]={s:x.s,t:+x.t||0}});window.onPm(o,s.metadata.fromCache)}},e=>console.warn(e)));
-  un.push(onSnapshot(attRef(),d=>{if(d.metadata.hasPendingWrites)return;if(window.onAtt)window.onAtt(d.exists()?d.data():null,d.metadata.fromCache)},e=>console.warn(e)));
+  if(attRef())un.push(onSnapshot(attRef(),d=>{if(d.metadata.hasPendingWrites)return;if(window.onAtt)window.onAtt(d.exists()?d.data():null,d.metadata.fromCache)},e=>console.warn(e)));
   if(window.ROLE==="manager"){let M=[];const push=()=>{if(window.onUsers)window.onUsers(M,[],[])};
    un.push(onSnapshot(query(collection(db,"members"),where("mgr","==",uid)),s=>{M=s.docs.map(d=>({id:d.id,...d.data()}));M.sort((x,y)=>(x.at||0)-(y.at||0));push()},e=>console.warn(e)))}},
  viewAs(id){viewUid=(window.ROLE==="manager"&&id)?id:null},
@@ -536,10 +544,10 @@ window.CLOUD={
 };
 onAuthStateChanged(auth,u=>{
  if(roleUn){roleUn();roleUn=null}
- uid=u?u.uid:null;viewUid=null;window.ROLE=null;okUid=null;
+ uid=u?u.uid:null;viewUid=null;window.ROLE=null;window.TID=null;okUid=null;
  if(!u){window.onAuth(null);return}
  roleUn=onSnapshot(doc(db,"members",u.uid),d=>{
-  if(d.exists()&&d.data().active===true){const nr=d.data().role==="manager"?"manager":"user";if(okUid!==u.uid||window.ROLE!==nr){okUid=u.uid;window.ROLE=nr;window.onAuth(u)}return}
+  if(d.exists()&&d.data().active===true){const nr=d.data().role==="manager"?"manager":"user",nt=nr==="manager"?u.uid:String(d.data().mgr||"");if(okUid!==u.uid||window.ROLE!==nr||window.TID!==nt){okUid=u.uid;window.ROLE=nr;window.TID=nt;window.onAuth(u)}return}
   if(d.metadata.fromCache&&!d.exists())return;
   okUid=null;
   if(d.exists()){window.onPending(u,"off");return}
@@ -563,12 +571,13 @@ function slShow(){const w=$("slw");if(!w)return;
  if(SLF&&SLF.dataset.sid===x.id)return;
  slDrop();
  try{const J=v=>JSON.stringify(v).replace(/</g,"\\u003c"),b=atob($("slsrc").textContent.trim()),h=new TextDecoder("utf-8").decode(Uint8Array.from(b,c=>c.charCodeAt(0))),
-  inj="<script>window.__SLK="+J("sitelog3_"+x.id)+";window.__SLI="+J({name:x.name||"",sup:x.sup||"",mgr:x.mgr||""})+";<\/script>",
+  inj="<script>window.__SLK="+J("sitelog3_"+x.id)+";window.__SLI="+J({name:x.name||"",sup:x.sup||"",mgr:x.mgr||""})+";<\/script>"+(VIEWU?RO_SHIM:""),
   fr=document.createElement("iframe");
   fr.dataset.sid=x.id;fr.setAttribute("allow","web-share; clipboard-write");
   fr.src=URL.createObjectURL(new Blob([h.replace("<head>",()=>"<head>"+inj)],{type:"text/html"}));
   w.appendChild(fr);SLF=fr;$("slt").textContent=x.name||""}catch(e){alert("تعذر فتح اليومية");view="proj";SLID=null;w.classList.remove("on")}}
 
+const RO_SHIM="<script>(function(){try{var P=Storage.prototype;P.setItem=P.removeItem=P.clear=function(){}}catch(e){}var blk=function(e){if(e.isTrusted===false)return;e.preventDefault();e.stopImmediatePropagation()};['click','dblclick','keydown','keypress','beforeinput','input','change','paste','cut','drop','dragstart','contextmenu','submit'].forEach(function(t){window.addEventListener(t,blk,true)});var st=document.createElement('style');st.textContent='input,textarea,select,button,[contenteditable]{pointer-events:none!important;-webkit-user-modify:read-only!important}';document.documentElement.appendChild(st);function fix(){document.querySelectorAll('input,textarea,select,button').forEach(function(x){x.disabled=true});document.querySelectorAll('[contenteditable]').forEach(function(x){x.contentEditable='false'})}document.addEventListener('DOMContentLoaded',function(){fix();new MutationObserver(fix).observe(document.body,{childList:true,subtree:true})})})()<\/script>";
 let PMF=null;
 function pmDrop(){if(PMF){try{URL.revokeObjectURL(PMF.src)}catch(e){}PMF.remove();PMF=null}}
 function pmOpen(){if(!SLID)return;view="pump";render();scrollTo(0,0)}
@@ -577,15 +586,15 @@ function pmShow(){const w=$("pmw");if(!w)return;const on=view==="pump"&&!!SLID;w
  if(!on){if(view!=="pump")pmDrop();return}
  if(PMF)return;
  try{const x=(PJ.items||[]).find(z=>z.id===SLID),J=v=>JSON.stringify(v).replace(/</g,"\\u003c"),b=atob($("pmsrc").textContent.trim()),h=new TextDecoder("utf-8").decode(Uint8Array.from(b,c=>c.charCodeAt(0))),fr=document.createElement("iframe"),
-  inj="<script>window.__PMK="+J(SLID)+";window.__PMN="+J(x&&x.name||"")+";<\/script>";
+  inj="<script>window.__PMK="+J(SLID)+";window.__PMN="+J(x&&x.name||"")+";<\/script>"+(VIEWU?RO_SHIM:"");
   fr.setAttribute("allow","web-share; clipboard-write");fr.src=URL.createObjectURL(new Blob([h.replace("<head>",()=>"<head>"+inj)],{type:"text/html"}));
   w.appendChild(fr);PMF=fr;$("pmt").textContent="طلبات واحتياجات الموقع"+(x&&x.name?" · "+x.name:"")}
  catch(e){alert("تعذر فتح الطلبات والاحتياجات");pmBack()}}
 const pjKey=()=>"custproj_"+(PJUID||"");
 function pjReset(u){slDrop();SLID=null;PJUID=u?u.uid:null;PJ={items:[]};PMREADY=false;PMR={};PMB={};pmLoadT();
  if(u){try{const x=JSON.parse(localStorage.getItem(pjKey())||"null");if(x&&Array.isArray(x.items))PJ.items=x.items.filter(n=>n&&n.id)}catch(e){}}}
-function pjLocal(){try{localStorage.setItem(pjKey(),JSON.stringify({items:PJ.items}))}catch(e){}}
-function cloudProj(){pjLocal();if(!ME||!window.CLOUD||!CLOUD.setProj)return;try{CLOUD.setProj({items:PJ.items}).catch(cerr)}catch(e){cerr(e)}}
+function pjLocal(){if(VIEWU)return;try{localStorage.setItem(pjKey(),JSON.stringify({items:PJ.items}))}catch(e){}}
+function cloudProj(){if(VIEWU)return;pjLocal();if(!ME||!window.CLOUD||!CLOUD.setProj)return;try{CLOUD.setProj({items:PJ.items}).catch(cerr)}catch(e){cerr(e)}}
 window.onProj=function(o){if(!ME)return;
  if(!o){if(PJ.items.length)cloudProj();return}
  PJ.items=(Array.isArray(o.items)?o.items:[]).filter(okId);pjLocal();
@@ -601,7 +610,7 @@ function pmBusy(key,id){return SLID===id&&((key.indexOf("sitelog3_")===0&&!!SLF)
 function pmCerr(e){console.warn(e);if(!PMWARN&&e&&e.code==="permission-denied"){PMWARN=true;alert("مفيش صلاحية لحفظ الطلبات على السحابة، راجع قواعد Firestore")}}
 function pmApply(key,r){try{const cur=localStorage.getItem(key);if(cur!==null&&cur!==r.s)localStorage.setItem("pmbak_"+key,cur);localStorage.setItem(key,r.s)}catch(e){return false}
  PMB[key]=r.s;PMT[key]={t:r.t,h:pmH(r.s)};return true}
-function pmPush(key,id,v){if(v.length>900000){console.warn("pm too big",key);return false}
+function pmPush(key,id,v){if(VIEWU)return false;if(v.length>900000){console.warn("pm too big",key);return false}
  const t=Date.now();PMB[key]=v;PMR[key]={s:v,t:t};PMT[key]={t:t,h:pmH(v)};
  try{CLOUD.setPm(key,{k:key,p:id,s:v,t:t}).catch(pmCerr)}catch(e){pmCerr(e)}return true}
 function pmTick(){if(!ME||!PMREADY||!window.CLOUD||!CLOUD.setPm)return;let dirty=false;
@@ -618,7 +627,7 @@ function pmTick(){if(!ME||!PMREADY||!window.CLOUD||!CLOUD.setPm)return;let dirty
   if(pmPush(key,x.id,v))dirty=true}));
  if(dirty)pmSaveT()}
 window.onPm=function(map,fromCache){if(!ME)return;PMR=map||{};if(!PMREADY&&(!fromCache||Object.keys(PMR).length))PMREADY=true;pmTick()};
-function pmDelCloud(id){PM_PRE.forEach(p=>{const key=p+id;delete PMR[key];delete PMB[key];delete PMT[key];if(ME&&window.CLOUD&&CLOUD.delPm){try{CLOUD.delPm(key).catch(pmCerr)}catch(e){pmCerr(e)}}});pmSaveT()}
+function pmDelCloud(id){if(VIEWU)return;PM_PRE.forEach(p=>{const key=p+id;delete PMR[key];delete PMB[key];delete PMT[key];if(ME&&window.CLOUD&&CLOUD.delPm){try{CLOUD.delPm(key).catch(pmCerr)}catch(e){pmCerr(e)}}});pmSaveT()}
 setInterval(function(){if(!document.hidden)pmTick()},3000);
 document.addEventListener("visibilitychange",function(){if(document.hidden)pmTick()});
 addEventListener("pagehide",function(){pmTick()});
@@ -659,10 +668,10 @@ function pjDelOk(id){try{localStorage.removeItem("sitelog3_"+id);localStorage.re
 let NID=null,NT=null,NUID=null,NTC="",NSEL=null;
 const NTX=["#e5484d","#000000","#ffffff","#facc15"],NHL=["#e5484d","#000000","#ffffff","#facc15"];
 const nKey=()=>"custnotes_"+(NUID||"");
-function nLocal(){try{localStorage.setItem(nKey(),JSON.stringify(N))}catch(e){}}
+function nLocal(){if(VIEWU)return;try{localStorage.setItem(nKey(),JSON.stringify(N))}catch(e){}}
 function notesReset(u){clearTimeout(NT);NUID=u?u.uid:null;N={notes:[]};NID=null;NSEL=null;
- if(u){try{const x=JSON.parse(localStorage.getItem(nKey())||"null");if(x&&Array.isArray(x.notes))N.notes=x.notes.filter(n=>n&&n.id)}catch(e){}}}
-function cloudNotes(){nLocal();if(!ME||!window.CLOUD||!CLOUD.setNotes)return;try{CLOUD.setNotes({notes:N.notes}).catch(cerr)}catch(e){cerr(e)}}
+ if(u&&!VIEWU){try{const x=JSON.parse(localStorage.getItem(nKey())||"null");if(x&&Array.isArray(x.notes))N.notes=x.notes.filter(n=>n&&n.id)}catch(e){}}}
+function cloudNotes(){if(VIEWU)return;nLocal();if(!ME||!window.CLOUD||!CLOUD.setNotes)return;try{CLOUD.setNotes({notes:N.notes}).catch(cerr)}catch(e){cerr(e)}}
 window.onNotes=function(o){if(!ME)return;
  if(!o){if(N.notes.length)cloudNotes();return}
  const inc=(Array.isArray(o.notes)?o.notes:[]).filter(okId);
@@ -794,21 +803,44 @@ addEventListener("pagehide",()=>noteSave(0));
 let ATP=1,ATT=null,ATE=null,ATY=new Date().getFullYear(),ATM=0,ATUID=null;
 const AT_MON=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 const AT_DAY=["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"];
-const atKey=()=>"custatt_"+(ATUID||"");
-function atLocal(){try{localStorage.setItem(atKey(),JSON.stringify(AT))}catch(e){}}
+const atKey=()=>"custatt_team_"+(window.TID||"");
+let ATMIG=false,ATMISS=false;
+function atLocal(){if(VIEWU)return;try{localStorage.setItem(atKey(),JSON.stringify(AT))}catch(e){}}
 function atNorm(o){const r={emps:[],rec:{},cfg:{}};if(o&&Array.isArray(o.emps))r.emps=o.emps.filter(okId).map(e=>({id:String(e.id),name:String(e.name||""),grp:String(e.grp||"")}));
  if(o&&o.rec&&typeof o.rec==="object")for(const k in o.rec){const m=o.rec[k];if(m&&typeof m==="object"){r.rec[k]={};for(const d in m)if(m[d])r.rec[k][d]=String(m[d])}}if(o&&o.cfg&&typeof o.cfg==="object")for(const k in o.cfg){const m=o.cfg[k];if(m&&typeof m==="object"){r.cfg[k]={};for(const ym in m){const c=m[ym]||{};r.cfg[k][/^\d{4}-\d{2}$/.test(ym)?ym+"-1":ym]={rate:+c.rate||0,days:+c.days||0,trans:+c.trans||0}}}}
  r.seed=+(o&&o.seed)||0;
  return r}
 let ATREADY=false;
-function attReset(u){ATREADY=false;ATUID=u?u.uid:null;AT={emps:[],rec:{},cfg:{}};ATE=null;if(u){try{AT=atNorm(JSON.parse(localStorage.getItem(atKey())||"null"))}catch(e){}}}
-function cloudAtt(){atLocal();if(!ATREADY)return;if(!ME||!window.CLOUD||!CLOUD.setAtt)return;try{CLOUD.setAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed||0}).catch(cerr)}catch(e){cerr(e)}}
+function attReset(u){ATREADY=false;ATMISS=false;ATMIG=false;ATUID=u?u.uid:null;AT={emps:[],rec:{},cfg:{}};ATE=null;if(u){try{AT=atNorm(JSON.parse(localStorage.getItem(atKey())||"null"))}catch(e){}}}
+function cloudAtt(){if(VIEWU)return;atLocal();if(!ATREADY)return;if(!ME||!window.CLOUD||!CLOUD.setAtt)return;try{CLOUD.setAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed||0}).catch(cerr)}catch(e){cerr(e)}}
 window.onAtt=function(o,fc){if(!ME)return;const rd=()=>{if(String(view).indexOf("att")===0)render()};
- if(o){AT=atNorm(o);ATREADY=true;atLocal();rd();return}
+ if(o){AT=atNorm(o);ATREADY=true;ATMISS=false;atLocal();rd();return}
  if(fc)return;
- ATREADY=true;
- if(AT.emps.length){cloudAtt();rd();return}
- (window.CLOUD&&CLOUD.oldAtt?CLOUD.oldAtt():Promise.resolve(null)).then(x=>{if(x&&Array.isArray(x.emps)&&x.emps.length){AT=atNorm(x);cloudAtt()}rd()}).catch(()=>rd())};
+ ATREADY=false;ATMISS=true;
+ if(window.ROLE==="manager"&&!VIEWU)attMigrate();
+ rd()};
+function atMerge(own,others){const base=atNorm(own||null),ids=new Set(base.emps.map(e=>e.id));let n=0;
+ others.forEach(o0=>{const o=atNorm(o0);o.emps.forEach(e=>{
+  let ex=base.emps.find(x=>atSame(x.name,e.name));
+  if(!ex){let id=e.id;while(ids.has(id))id="m"+Date.now().toString(36)+(n++);ids.add(id);ex={id:id,name:e.name,grp:e.grp||""};base.emps.push(ex)}
+  else if(!ex.grp&&e.grp)ex.grp=e.grp;
+  const r=o.rec[e.id]||{};if(Object.keys(r).length){const t=base.rec[ex.id]||(base.rec[ex.id]={});for(const d in r)if(!t[d])t[d]=r[d]}
+  const c=o.cfg[e.id]||{};if(Object.keys(c).length){const t=base.cfg[ex.id]||(base.cfg[ex.id]={});for(const k in c)if(!t[k])t[k]=c[k]}})});
+ return base}
+async function attMigrate(){
+ if(VIEWU||ATMIG||!ME||window.ROLE!=="manager"||!window.CLOUD||!CLOUD.createAtt)return;ATMIG=true;
+ try{
+  let own=await CLOUD.ownAtt();
+  if(!own||!Array.isArray(own.emps)||!own.emps.length){try{own=await CLOUD.oldAtt()||own}catch(e){}}
+  const oth=await CLOUD.teamAtts();
+  if(VIEWU)return;
+  AT=atMerge(own,oth);ATREADY=false;
+  if(!(AT.seed>=2))attSeed();
+  if(VIEWU)return;
+  const ok=await CLOUD.createAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed||0});
+  if(VIEWU)return;
+  if(ok){ATREADY=true;ATMISS=false;atLocal();if(String(view).indexOf("att")===0)render()}
+ }catch(e){cerr(e)}finally{ATMIG=false}}
 const atKy=(y,m,d)=>y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
 const atHue=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%360;return h};
 function atPlaces(){const o={};Object.values(AT.rec).forEach(m=>Object.values(m).forEach(v=>o[v]=1));return Object.keys(o)}
@@ -817,7 +849,7 @@ function atP(y,m,p){return p===1?[new Date(y,m,11),new Date(y,m,25)]:[new Date(y
 function atPK(d){const x=d.getDate();let y=d.getFullYear(),m=d.getMonth();if(x<=10){const q=new Date(y,m-1,1);y=q.getFullYear();m=q.getMonth()}return y+"-"+String(m+1).padStart(2,"0")+"-"+(x>=11&&x<=25?1:2)}
 function atLab(y,m,p){const [a,b]=atP(y,m,p);return p===1?`11 ← 25 ${AT_MON[m]}`:`26 ${AT_MON[a.getMonth()]} ← 10 ${AT_MON[b.getMonth()]}`}
 function attRender(A,T){T.style.display="none";
- const e=AT.emps.find(x=>x.id===ATE);if(view!=="att"&&!e)view="att";if(view==="att"&&ATREADY&&!(AT.seed>=2))attSeed();
+ const e=AT.emps.find(x=>x.id===ATE);if(view!=="att"&&!e)view="att";
  let h="";
  if(view==="att"){
   h=`<div class="row noprint"><button class="btn g" onclick="view='main';render();scrollTo(0,0)">→ رجوع</button></div><h1>📅 الحضور والتمام</h1>
@@ -850,6 +882,7 @@ function attRender(A,T){T.style.display="none";
   <div style="display:flex;gap:8px;margin-top:14px"><div class="card" style="flex:1;margin:0;padding:10px;display:flex;align-items:center;gap:6px;min-width:0"><span class="m" style="font-size:13px;white-space:nowrap">إجمالي البدلات</span><b id="ata" style="font-size:15px">${f(al)}</b></div><div class="card" style="flex:1;margin:0;padding:10px;display:flex;align-items:center;gap:6px;min-width:0"><span class="m" style="font-size:13px;white-space:nowrap">الانتقالات</span><input id="att_t" type="number" inputmode="decimal" style="flex:1;min-width:0;width:100%;margin:0;padding:6px 8px" value="${cf.trans||""}" oninput="attCfg()"></div></div>
   <div class="card" style="margin-top:10px;text-align:center"><div class="m">إجمالي المستحق</div><b id="ats" style="font-size:24px" class="ok">${f(al+(+cf.trans||0))}</b></div>`;
  }
+ if(!ATREADY&&!AT.emps.length&&view==="att")h=`<div class="row noprint"><button class="btn g" onclick="view='main';render();scrollTo(0,0)">→ رجوع</button></div><h1>📅 الحضور والتمام</h1><div class="card m">${isMgr()&&!VIEWU?"⏳ جاري تجهيز الحضور المشترك، استنى لحظة...":"⏳ الحضور المشترك لسه ما اتفعّلش. المدير لازم يفتح الحضور مرة الأول."}</div>`;
  A.innerHTML=h}
 function attCfg(){const r=+$("atr").value||0,d=+$("atd").value||0,tr=+$("att_t").value||0,k=ATY+"-"+String(ATM+1).padStart(2,"0")+"-"+ATP;
  if(!AT.cfg)AT.cfg={};if(!AT.cfg[ATE])AT.cfg[ATE]={};AT.cfg[ATE][k]={rate:r,days:d,trans:tr};
@@ -1131,5 +1164,24 @@ function attSave(set){const v=$("atp").value.trim(),[pa,pb]=atP(ATY,ATM,ATP),mn=
  if(set&&!v)return;if(!AT.rec[ATE])AT.rec[ATE]={};
  for(let d=new Date(f+"T00:00:00"),end=new Date(t+"T00:00:00");d<=end;d.setDate(d.getDate()+1)){const k=atFm(d);if(set)AT.rec[ATE][k]=v;else delete AT.rec[ATE][k]}
  cloudAtt();$("dlg").close();render()}
+</script>
+<script id="ro-guard">
+// ===== وضع القراءة فقط لبيانات الموظف (المدير مايقدرش يعدّل) =====
+(function(){
+var W="addInc editInc delInc saveInc addPexp editPexp delPexp savePexp addSite saveSite delSite delExp editExp2 editCust askDel doDel addExp editExp saveEdit saveExp settleDo importData readImport doImport pjForm pjEdit pjDelAsk pjSave pjDel pjDelOk noteNew noteSave notePin notePinAsk notePinOk noteFav noteDel noteDelOk noteColor noteColorAsk noteTitleClear noteTitleClearOk noteTitleColor noteDirty nInput nCk nCmd nDir nCheck nHl attAdd attEdit attDel attDelDo attEditForm attEditSave attRen attCfg attImpDlg attImpGo attImpDo attSeed attMigrate attSave attDay attAskGo".split(" ");
+var RE=new RegExp("(^|[^\\w$.])("+W.join("|")+"|save|saveP|cloud[A-Z]\\w*|idbPut|idbDel|pmDelCloud)\\s*\\(|askPin\\(\\s*['\"](settle|site|inc|pexp|exp)|\\.(custody|desc|amt|expenses|sites|inc|exp)\\s*=[^=]|\\.(push|splice)\\(");
+function toast(){try{var t=document.getElementById("rot");if(!t){t=document.createElement("div");t.id="rot";t.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:70px;z-index:100000;background:#222;color:#fff;padding:8px 14px;border-radius:10px;font-size:14px";document.body.appendChild(t)}t.textContent="👁️ قراءة فقط: مفيش تعديل على بيانات الموظف";t.style.display="block";clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none"},2200)}catch(e){}}
+W.forEach(function(n){var f=window[n];if(typeof f!=="function")return;window[n]=function(){if(VIEWU){toast();return}return f.apply(this,arguments)}});
+function hit(el){for(var i=0;i<el.attributes.length;i++){var a=el.attributes[i];if(/^on(click|change|input|blur|keydown|keyup|paste|drop)$/.test(a.name)&&RE.test(a.value))return true}return false}
+function sweep(){if(!VIEWU)return;document.querySelectorAll("[onclick],[onchange],[oninput],[onblur],[onkeydown],[onkeyup]").forEach(function(el){if(el.closest("#vb"))return;if(hit(el)){el.style.display="none";el.setAttribute("data-ro","1");if(el.disabled!==undefined)el.disabled=true}});
+ document.querySelectorAll("#ned,#nt,#nbody,[contenteditable]").forEach(function(el){if(el.isContentEditable)el.contentEditable="false";if("readOnly"in el)el.readOnly=true});
+ document.querySelectorAll("#ned [data-ck]").forEach(function(el){el.style.pointerEvents="none"})}
+new MutationObserver(function(){if(VIEWU)sweep()}).observe(document.documentElement,{childList:true,subtree:true});
+setInterval(sweep,500);
+function stop(e){if(!VIEWU||e.isTrusted===false)return;var t=e.target;if(!t||!t.closest)return;
+ if(e.type==="click"){var c=t.closest("[onclick]");while(c){if(hit(c)){e.preventDefault();e.stopImmediatePropagation();toast();return}c=c.parentElement&&c.parentElement.closest("[onclick]")}return}
+ if(t.closest("#ned,#nt,[contenteditable]")){e.preventDefault();e.stopImmediatePropagation()}}
+["click","beforeinput","input","paste","cut","drop","keydown"].forEach(function(t){document.addEventListener(t,stop,true)});
+})();
 </script>
 <script>if("serviceWorker"in navigator)addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});</script></body></html>
