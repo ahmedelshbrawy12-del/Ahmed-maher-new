@@ -968,11 +968,10 @@ let ATMIG=false,ATMISS=false;
 function atLocal(){if(VIEWU)return;try{localStorage.setItem(atKey(),JSON.stringify(AT))}catch(e){}}
 function atNorm(o){const r={emps:[],rec:{},cfg:{}};if(o&&Array.isArray(o.emps))r.emps=o.emps.filter(okId).map(e=>({id:String(e.id),name:String(e.name||""),grp:String(e.grp||"")}));
  if(o&&o.rec&&typeof o.rec==="object")for(const k in o.rec){const m=o.rec[k];if(m&&typeof m==="object"){r.rec[k]={};for(const d in m)if(m[d])r.rec[k][d]=String(m[d])}}if(o&&o.cfg&&typeof o.cfg==="object")for(const k in o.cfg){const m=o.cfg[k];if(m&&typeof m==="object"){r.cfg[k]={};for(const ym in m){const c=m[ym]||{};r.cfg[k][/^\d{4}-\d{2}$/.test(ym)?ym+"-1":ym]={rate:+c.rate||0,days:+c.days||0,trans:+c.trans||0}}}}
- r.seed=+(o&&o.seed)||0;
  return r}
 let ATREADY=false;
 function attReset(u){ATREADY=false;ATMISS=false;ATMIG=false;ATUID=u?u.uid:null;AT={emps:[],rec:{},cfg:{}};ATE=null;if(u){try{AT=atNorm(JSON.parse(localStorage.getItem(atKey())||"null"))}catch(e){}}}
-function cloudAtt(){if(VIEWU)return;atLocal();if(!ATREADY)return;if(!ME||!window.CLOUD||!CLOUD.setAtt)return;try{CLOUD.setAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed||0}).catch(cerr)}catch(e){cerr(e)}}
+function cloudAtt(){if(VIEWU)return;atLocal();if(!ATREADY)return;if(!ME||!window.CLOUD||!CLOUD.setAtt)return;try{CLOUD.setAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{}}).catch(cerr)}catch(e){cerr(e)}}
 window.onAtt=function(o,fc){if(!ME)return;const rd=()=>{if(String(view).indexOf("att")===0)render()};
  if(o){AT=atNorm(o);ATREADY=true;ATMISS=false;atLocal();rd();return}
  if(fc)return;
@@ -995,9 +994,8 @@ async function attMigrate(){
   const oth=await CLOUD.teamAtts();
   if(VIEWU)return;
   AT=atMerge(own,oth);ATREADY=false;
-  if(!(AT.seed>=2))attSeed();
   if(VIEWU)return;
-  const ok=await CLOUD.createAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{},seed:AT.seed||0});
+  const ok=await CLOUD.createAtt({emps:AT.emps,rec:AT.rec,cfg:AT.cfg||{}});
   if(VIEWU)return;
   if(ok){ATREADY=true;ATMISS=false;atLocal();if(String(view).indexOf("att")===0)render()}
  }catch(e){cerr(e)}finally{ATMIG=false}}
@@ -1285,16 +1283,7 @@ function attStep(d){
 function atGrouped(){const gs=[];AT.emps.forEach(e=>{const g=e.grp||"";let x=gs.find(y=>y.n===g);if(!x){x={n:g,l:[]};gs.push(x)}x.l.push(e)});gs.sort((a,b)=>(a.n===""?1:0)-(b.n===""?1:0));gs.forEach(g=>g.h=g.n||(gs.length>1?"موظفين":""));if(!gs.length)gs.push({n:"",h:"",l:[]});return gs}
 function atGroups(){return atGrouped().map(g=>g.n).filter(Boolean)}
 function atNm(s){return String(s).replace(/[\u064B-\u065F\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim()}
-const AT_SEED=[["مهندسين",["محمد اسماعيل عبد العزيز","احمد علي عز الدين","كامل إسلام محمد كامل","أحمد ماهر الشبراوي عبده","محمود رمضان عبد الحكيم","م ايمن هاشم مكتب فني"]],
-["فنيين",["محمد مصطفى محمد يوسف","أحمد السيد سويلم أحمد","محمد إبراهيم عبد اللاهي حسين","محمد نجيب فوزي مفتاح","محمود السيد محمد خليل","شريف عبد المنعم عبد العزيز","شعبان عطيه محمد عطيه","عبد الله السيد علي محمد","احمد العزب السباعي","مصطفى علي مصطفى محمد بلح","احمد محمد السيد موسى السيد","محمد احمد محمد إبراهيم","ابراهيم صلاح خفاجه","علي محمد علي بسيوني"]]];
 function atSame(a,b){const q=atNm(a),k=atNm(b),qw=q.split(" ").length,kw=k.split(" ").length;return q===k||(qw>=3&&k.indexOf(q+" ")===0)||(kw>=3&&q.indexOf(k+" ")===0)}
-function attSeed(){const add=!AT.seed,pos=[];let i=0;
- AT_SEED.forEach(([g,l])=>l.forEach(n=>{i++;let ex=AT.emps.find(e=>atSame(e.name,n));
-  if(!ex&&add){ex={id:"sd"+i,name:n,grp:g};AT.emps.push(ex)}
-  if(ex){if(add&&!ex.grp)ex.grp=g;pos.push([ex,i])}}));
- const rank=new Map(pos);
- AT.emps=AT.emps.map((e,j)=>[e,rank.has(e)?rank.get(e):1e6+j]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
- AT.seed=2;cloudAtt()}
 function attAsk(title,cb){window.ATASK=cb;
  dlg(`<h3>🔒 ${title}</h3><div class="m" style="margin-bottom:6px">اكتب باسورد الإيميل بتاعك للتأكيد</div><input id="atpw" type="password" autocomplete="current-password" placeholder="باسورد الإيميل" onkeydown="if(event.key==='Enter')attAskGo()"><div id="atpwm" class="bad" style="font-size:13px;min-height:18px"></div><div class="row" style="margin-top:8px"><button id="atpwb" class="btn" onclick="attAskGo()">تأكيد</button><button class="btn g" onclick="window.ATASK=null;$('dlg').close()">إلغاء</button></div>`);
  setTimeout(()=>{const i=$("atpw");if(i)i.focus()},50)}
@@ -1328,7 +1317,7 @@ function attSave(set){const v=$("atp").value.trim(),[pa,pb]=atP(ATY,ATM,ATP),mn=
 <script id="ro-guard">
 // ===== وضع القراءة فقط لبيانات الموظف (المدير مايقدرش يعدّل) =====
 (function(){
-var W="addInc editInc delInc saveInc addPexp editPexp delPexp savePexp addSite saveSite delSite delExp editExp2 editCust askDel doDel addExp editExp saveEdit saveExp settleDo importData readImport doImport pjForm pjEdit pjDelAsk pjSave pjDel pjDelOk noteNew noteSave notePin notePinAsk notePinOk noteFav noteDel noteDelOk noteColor noteColorAsk noteTitleClear noteTitleClearOk noteTitleColor noteDirty nInput nCk nCmd nDir nCheck nHl attAdd attEdit attDel attDelDo attEditForm attEditSave attRen attCfg attImpDlg attImpGo attImpDo attSeed attMigrate attSave attDay attAskGo".split(" ");
+var W="addInc editInc delInc saveInc addPexp editPexp delPexp savePexp addSite saveSite delSite delExp editExp2 editCust askDel doDel addExp editExp saveEdit saveExp settleDo importData readImport doImport pjForm pjEdit pjDelAsk pjSave pjDel pjDelOk noteNew noteSave notePin notePinAsk notePinOk noteFav noteDel noteDelOk noteColor noteColorAsk noteTitleClear noteTitleClearOk noteTitleColor noteDirty nInput nCk nCmd nDir nCheck nHl attAdd attEdit attDel attDelDo attEditForm attEditSave attRen attCfg attImpDlg attImpGo attImpDo attMigrate attSave attDay attAskGo".split(" ");
 var RE=new RegExp("(^|[^\\w$.])("+W.join("|")+"|save|saveP|cloud[A-Z]\\w*|idbPut|idbDel|pmDelCloud)\\s*\\(|askPin\\(\\s*['\"](settle|site|inc|pexp|exp)|\\.(custody|desc|amt|expenses|sites|inc|exp)\\s*=[^=]|\\.(push|splice)\\(");
 function toast(){try{var t=document.getElementById("rot");if(!t){t=document.createElement("div");t.id="rot";t.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:70px;z-index:100000;background:#222;color:#fff;padding:8px 14px;border-radius:10px;font-size:14px";document.body.appendChild(t)}t.textContent="👁️ قراءة فقط: مفيش تعديل على بيانات الموظف";t.style.display="block";clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none"},2200)}catch(e){}}
 W.forEach(function(n){var f=window[n];if(typeof f!=="function")return;window[n]=function(){if(VIEWU){toast();return}return f.apply(this,arguments)}});
