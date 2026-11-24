@@ -267,22 +267,22 @@ function settleDo(){const s=S.sites.find(x=>x.id===cur);if(!s||!SETTLE||SETTLE.i
 function pdfHelp(){dlg(`<h3>حفظ التقرير PDF</h3><div class="m" style="line-height:2">1) اضغط "فتح شاشة الطباعة"<br>2) من خانة <b>الطابعة</b> اختار <b>حفظ بصيغة PDF</b><br>3) اضغط زر <b>PDF</b> (أو طباعة) واختار مكان الحفظ</div><div class="row" style="margin-top:12px"><button class="btn" onclick="printNow()">فتح شاشة الطباعة</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 async function printNow(){const s=S.sites.find(x=>x.id===cur),d=new Date().toISOString().slice(0,10),nm=await SV.name((view==="sreport"&&s?"تقرير عهدة "+s.name:"تقرير تصفية العهد")+" "+d);if(nm===null)return;document.title=nm;$("dlg").close();setTimeout(()=>window.print(),150)}
 addEventListener("afterprint",()=>{document.title="تصفية العهد"});
-let DB=null;const IMG={};
+let DB=null;const IMG={};const IMGLOCAL={};
 function idbOpen(){return new Promise(r=>{try{const q=indexedDB.open("custimg",1);q.onupgradeneeded=()=>q.result.createObjectStore("i");q.onsuccess=()=>{DB=q.result;r()};q.onerror=()=>r();q.onblocked=()=>r()}catch(e){r()}})}
-function idbAll(){return new Promise(r=>{if(!DB)return r();try{const q=DB.transaction("i").objectStore("i").openCursor();q.onsuccess=()=>{const c=q.result;if(c){IMG[c.key]=c.value;c.continue()}else r()};q.onerror=()=>r()}catch(e){r()}})}
-function idbPut(k,v){if(VIEWU)return Promise.resolve(false);cloudImg(k,v);return new Promise(r=>{if(!DB)return r(false);try{const tx=DB.transaction("i","readwrite");tx.objectStore("i").put(v,k);tx.oncomplete=()=>r(true);tx.onerror=tx.onabort=()=>r(false)}catch(e){r(false)}})}
-function idbDel(k){if(VIEWU)return;cloudImgDel(k);try{if(DB)DB.transaction("i","readwrite").objectStore("i").delete(k)}catch(e){}delete IMG[k]}
+function idbAll(){return new Promise(r=>{if(!DB)return r();try{const q=DB.transaction("i").objectStore("i").openCursor();q.onsuccess=()=>{const c=q.result;if(c){IMG[c.key]=c.value;IMGLOCAL[c.key]=1;c.continue()}else r()};q.onerror=()=>r()}catch(e){r()}})}
+function idbPut(k,v,cv){if(VIEWU)return Promise.resolve(false);cloudImg(k,cv!==undefined?cv:v);return new Promise(r=>{if(!DB)return r(false);try{const tx=DB.transaction("i","readwrite");tx.objectStore("i").put(v,k);tx.oncomplete=()=>{IMGLOCAL[k]=1;r(true)};tx.onerror=tx.onabort=()=>r(false)}catch(e){r(false)}})}
+function idbDel(k){if(VIEWU)return;cloudImgDel(k);try{if(DB)DB.transaction("i","readwrite").objectStore("i").delete(k)}catch(e){}delete IMG[k];delete IMGLOCAL[k]}
 function findExp(id){return S.sites.flatMap(s=>s.expenses).find(x=>x.id===id)}
 function editExp(id){askPin("edit",id)}
 function editExp2(id){const e=findExp(id);if(!e)return;const has=!!(e.img||IMG[id]);
  dlg(`<h3>تعديل مصروف</h3><input id="a" value="${esc(e.desc)}" placeholder="البيان"><input id="b" type="number" inputmode="decimal" value="${e.amt}" placeholder="المبلغ"><div class="m" style="margin-top:6px">${has?"الصورة الحالية محفوظة. اختار صورة جديدة لو عايز تستبدلها:":"إضافة صورة للفاتورة (اختياري):"}</div><input id="im" type="file" accept="image/*">${has?`<button class="btn r" style="margin:6px 0" onclick="askDel('img','${id}')">🗑️ حذف الصورة الحالية</button>`:""}<div class="row" style="margin-top:8px"><button class="btn" onclick="saveEdit('${id}')">حفظ التعديل</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 function saveEdit(id){const d=$("a").value.trim(),m=+$("b").value;if(!d||!m)return;const e=findExp(id);if(!e)return;const file=$("im").files[0],rm=$("rm")&&$("rm").checked;
- const fin=async(full,thumb)=>{e.desc=d;e.amt=m;
-  if(full){const ok=await idbPut(id,full);if(ok){IMG[id]=full;e.img=thumb}else{delete IMG[id];e.img=full}}
+ const fin=async(orig,thumb,cloud)=>{e.desc=d;e.amt=m;
+  if(orig){const ok=await idbPut(id,orig,cloud);if(ok){IMG[id]=orig;e.img=thumb}else{delete IMG[id];e.img=cloud||orig}}
   else if(rm){idbDel(id);e.img=""}
   save();$("dlg").close();render()};
  if(!file)return fin("","");
- const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const mk=(mx,q)=>{const k=Math.min(1,mx/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);return c.toDataURL("image/jpeg",q)};fin(mk(1400,.7),mk(200,.6))};i.src=r.result};r.readAsDataURL(file)}
+ const r=new FileReader();r.onload=async()=>{try{const orig=r.result,sm=await cnvSmart(orig),th=await mkThumb(orig);fin(orig,th,sm.d)}catch(x){cerr(x)}};r.readAsDataURL(file)}
 let PINH=(()=>{try{return localStorage.getItem("custpinh")||""}catch(e){return""}})();
 async function pinHash(p){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("cust:"+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){return"p:"+p}}
 async function setPin(p){PINH=await pinHash(p);try{localStorage.setItem("custpinh",PINH);localStorage.removeItem("custpin")}catch(e){}}
@@ -329,7 +329,7 @@ async function doImport(rep){const d=IMPD;if(!d)return;let n=0;const t=Date.now(
  const add=[];
  for(const x of (Array.isArray(d.sites)?d.sites:[])){const o={id:"s"+t+"_"+(n++),name:String(x.name||"موقع"),custody:+x.custody||0,expenses:[]};
   for(const y of (x.expenses||[])){const id="e"+t+"_"+(n++),e={id,desc:String(y.desc||""),amt:+y.amt||0,img:""};
-   if(y.img){const th=await mkThumb(y.img),ok=await idbPut(id,y.img);if(ok){IMG[id]=y.img;e.img=th}else e.img=y.img}
+   if(y.img){const th=await mkThumb(y.img),sm=await cnvSmart(y.img),ok=await idbPut(id,y.img,sm.d);if(ok){IMG[id]=y.img;e.img=th}else e.img=sm.d}
    o.expenses.push(e)}
   add.push(o)}
  if(Array.isArray(d.sites)){S.sites=(rep?[]:S.sites).concat(add);save()}
@@ -363,13 +363,13 @@ function editCust(){const s=S.sites.find(x=>x.id===cur);dlg(`<h3>تعديل ال
 function delSite(){if(confirm("حذف الموقع وكل مصروفاته؟")){S.sites.find(x=>x.id===cur).expenses.forEach(e=>idbDel(e.id));S.sites=S.sites.filter(x=>x.id!==cur);save();view="home";render()}}
 function addExp(){dlg(`<h3>مصروف جديد</h3><input id="a" placeholder="البيان"><input id="b" type="number" inputmode="decimal" placeholder="المبلغ"><input id="im" type="file" accept="image/*"><div class="row"><button class="btn" onclick="saveExp()">حفظ</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
 function saveExp(){const d=$("a").value.trim(),m=+$("b").value;if(!d||!m)return;const file=$("im").files[0],id="e"+Date.now();
- const done=async(full,thumb)=>{const e={id,desc:d,amt:m,img:thumb||""};
-  if(full){const ok=await idbPut(id,full);if(ok)IMG[id]=full;else e.img=full}
+ const done=async(orig,thumb,cloud)=>{const e={id,desc:d,amt:m,img:thumb||""};
+  if(orig){const ok=await idbPut(id,orig,cloud);if(ok)IMG[id]=orig;else e.img=cloud||orig}
   S.sites.find(x=>x.id===cur).expenses.push(e);save();$("dlg").close();render()};
  if(!file)return done("","");
- const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const mk=(mx,q)=>{const k=Math.min(1,mx/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);return c.toDataURL("image/jpeg",q)};done(mk(1400,.7),mk(200,.6))};i.src=r.result};r.readAsDataURL(file)}
+ const r=new FileReader();r.onload=async()=>{try{const orig=r.result,sm=await cnvSmart(orig),th=await mkThumb(orig);done(orig,th,sm.d)}catch(x){cerr(x)}};r.readAsDataURL(file)}
 function delExp(id){const s=S.sites.find(x=>x.id===cur);s.expenses=s.expenses.filter(e=>e.id!==id);idbDel(id);save();render()}
-function showImg(id){const e=S.sites.flatMap(s=>s.expenses).find(x=>x.id===id);if(!e)return;dlg(`<img src="${IMG[id]||e.img}" style="width:100%;max-height:78vh;object-fit:contain;border-radius:10px"><button class="btn g" style="margin-top:8px" onclick="$('dlg').close()">إغلاق</button>`)}
+function showImg(id){const e=S.sites.flatMap(s=>s.expenses).find(x=>x.id===id);if(!e)return;const loc=!!(IMG[id]&&IMGLOCAL[id]);dlg(`<img src="${IMG[id]||e.img}" style="width:100%;max-height:78vh;object-fit:contain;border-radius:10px"><div class="m" style="font-size:12px;margin-top:6px;text-align:center">${loc?"📷 النسخة الأصلية كاملة الجودة (محفوظة على جهازك)":"☁️ نسخة مضغوطة من السحابة"}</div><button class="btn g" style="margin-top:8px" onclick="$('dlg').close()">إغلاق</button>`)}
 render();const IDBREADY=idbOpen().then(idbAll);IDBREADY.then(render);hint();
 setTimeout(function(){if(!window.CLOUD){const l=$("lerr");if(l)l.textContent="تعذر الاتصال بالخدمة، تأكد من الإنترنت وافتح التطبيق تاني"}},9000);
 
@@ -411,7 +411,7 @@ async function usAddGo(){const u0=$("ue").value.trim().toLowerCase(),e=u0.indexO
 async function usToggle(id,on){if(!on&&!confirm("إيقاف المستخدم ده؟ مش هيقدر يدخل لحد ما تفعّله."))return;try{await CLOUD.setActive(id,on)}catch(e){cerr(e)}}
 async function usReset(em){if(!em||!confirm("إرسال رابط تغيير الباسورد على "+em+"؟"))return;try{await CLOUD.resetFor(em);alert("تم الإرسال")}catch(e){alert(lerrTxt(e))}}
 function usView(id){const m=UL.m.find(x=>x.id===id);if(!m||!(canManage()||OVIEW))return;
- VIEWU={uid:id,email:m.email};CLOUD.viewAs(id);for(const k in IMG)delete IMG[k];
+ VIEWU={uid:id,email:m.email};CLOUD.viewAs(id);for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];
  S={sites:[]};P={inc:[],exp:[]};LAST={};SYNC=false;PERS_INIT=false;view="main";cur=null;PEND=null;
  const pu={uid:id,email:m.email};notesReset(pu);pjReset(pu);attReset(pu);
  vbar();render();scrollTo(0,0);CLOUD.start();bgImgs()}
@@ -420,11 +420,11 @@ function usBack(){
   if(!VIEWU||VIEWU.uid===OVIEW.uid){ovBack();return}
   const pu={uid:OVIEW.uid,email:OVIEW.email};VIEWU={uid:OVIEW.uid,email:OVIEW.email};
   try{CLOUD.viewAs(null)}catch(e){}
-  for(const k in IMG)delete IMG[k];
+  for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];
   S={sites:[]};P={inc:[],exp:[]};LAST={};SYNC=false;PERS_INIT=false;view="main";cur=null;PEND=null;SETTLE=null;
   notesReset(pu);pjReset(pu);attReset(pu);
   vbar();render();scrollTo(0,0);CLOUD.start();bgImgs();return}
- VIEWU=null;CLOUD.viewAs(null);for(const k in IMG)delete IMG[k];vbar();window.onAuth(ME);Promise.resolve(idbAll()).then(()=>render()).catch(()=>{})}
+ VIEWU=null;CLOUD.viewAs(null);for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];vbar();window.onAuth(ME);Promise.resolve(idbAll()).then(()=>render()).catch(()=>{})}
 
 // ===== المدير الأعلى (المالك): إدارة قائمة المديرين وهوية الشركة =====
 let OW={m:[],owner:"",b:{},logo:null,ok:false};
@@ -495,12 +495,12 @@ async function owView(i){const e=OW.m[i];if(!e)return;if(!window.CLOUD||!CLOUD.f
  catch(z){console.warn(z);alert("تعذر فتح بيانات المدير، تأكد من الإنترنت وحاول تاني")}}
 function ovEnter(m){OVIEW={uid:m.id,email:String(m.email||""),name:String(m.name||"")};VIEWU={uid:m.id,email:OVIEW.email};
  window.TID=m.id;try{CLOUD.oviewAs(m.id);CLOUD.viewAs(null)}catch(e){}
- for(const k in IMG)delete IMG[k];
+ for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];
  S={sites:[]};P={inc:[],exp:[]};LAST={};SYNC=false;PERS_INIT=false;view="main";cur=null;PEND=null;SETTLE=null;
  const pu={uid:m.id,email:OVIEW.email};notesReset(pu);pjReset(pu);attReset(pu);
  vbar();render();scrollTo(0,0);CLOUD.start();bgImgs()}
 function ovBack(){OVIEW=null;VIEWU=null;window.TID=null;try{CLOUD.oviewAs(null);CLOUD.viewAs(null)}catch(e){}
- for(const k in IMG)delete IMG[k];vbar();window.onOwner(ME)}
+ for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];vbar();window.onOwner(ME)}
 // ===== هوية الشركة في التقارير =====
 const BR_LAYS=[["banner","بانر عرض كامل","اللوجو بعرض الصفحة كلها فوق (للصور العريضة)"],["center","لوجو في النص","اللوجو في النص والاسم والشعار تحته"],["side","لوجو يمين والنص جنبه","اللوجو على اليمين والاسم والشعار على شماله"],["text","نص بس","من غير لوجو، الاسم والشعار بس"]];
 function brLay(b){const v=b&&b.headerLayout;return v==="banner"||v==="center"||v==="text"||v==="side"?v:"side"}
@@ -540,8 +540,26 @@ function cloudSites(){if(VIEWU)return;if(!ME||!window.CLOUD)return;const ids={};
  S.sites.forEach(s=>{ids[s.id]=1;const j=JSON.stringify(s);if(LAST[s.id]!==j){LAST[s.id]=j;try{CLOUD.setSite(JSON.parse(j)).catch(cerr)}catch(e){cerr(e)}}});
  Object.keys(LAST).forEach(id=>{if(!ids[id]){delete LAST[id];try{CLOUD.delSite(id).catch(cerr)}catch(e){cerr(e)}}})}
 function cloudPers(){if(VIEWU)return;if(!ME||!window.CLOUD)return;try{CLOUD.setPers({inc:P.inc,exp:P.exp}).catch(cerr)}catch(e){cerr(e)}}
+const IMG_TGT=102400,IMG_QMIN=.35,IMG_MINPX=640,IMG_STARTPX=1600;
+function b64bytes(d){const i=d.indexOf(",");return Math.floor((d.length-(i<0?0:i+1))*.75)}
+async function cnvSmart(src){const r0={d:src,bytes:b64bytes(src),w:0,h:0,q:0,floor:false,skipped:true};
+ try{const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+ let mx=Math.min(Math.max(im.width,im.height),IMG_STARTPX),q=.8,best=null;
+ for(let t=0;t<40;t++){const k=Math.min(1,mx/Math.max(im.width,im.height)),c=document.createElement("canvas");
+  c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
+  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+  const d=c.toDataURL("image/jpeg",q),b=b64bytes(d);
+  best={d:d,bytes:b,w:c.width,h:c.height,q:q,floor:false,skipped:false};
+  if(b<=IMG_TGT)break;
+  if(q>IMG_QMIN){q=Math.max(IMG_QMIN,Math.round((q-.12)*100)/100);continue}
+  if(mx>IMG_MINPX){mx=Math.max(IMG_MINPX,Math.round(mx*.85));q=.7;continue}
+  best.floor=true;break}
+ console.log("img-compress:",best.bytes,"bytes,",best.w+"x"+best.h,"q="+best.q,best.floor?"(reached quality/size floor, kept larger)":"");
+ window.__imgc={bytes:best.bytes,w:best.w,h:best.h,q:best.q,floor:best.floor};
+ return best}catch(e){console.warn("img-compress failed, using original",e);window.__imgc={bytes:r0.bytes,error:String(e)};return r0}}
+async function smartCloud(v){return b64bytes(v)>IMG_TGT?(await cnvSmart(v)).d:v}
 function reimg(u,mx,q){return new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,mx/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);r(c.toDataURL("image/jpeg",q))};i.onerror=()=>r(u);i.src=u})}
-async function cloudImg(k,v){if(VIEWU)return;if(!ME||!window.CLOUD||!v)return;try{if(v.length>900000)v=await reimg(v,1200,.6);if(v.length>980000)v=await reimg(v,900,.5);await CLOUD.putImg(k,v)}catch(e){cerr(e)}}
+async function cloudImg(k,v){if(VIEWU)return;if(!ME||!window.CLOUD||!v)return;try{v=await smartCloud(v);await CLOUD.putImg(k,v)}catch(e){cerr(e)}}
 function cloudImgDel(k){if(VIEWU)return;if(!ME||!window.CLOUD)return;try{CLOUD.delImg(k).catch(cerr)}catch(e){cerr(e)}}
 async function bgImgs(){try{const o=await CLOUD.allImgs();let n=0;for(const k in o){if(!IMG[k]){IMG[k]=o[k];n++}}if(n)render()}catch(e){console.warn(e)}}
 async function migrate(){if(VIEWU)return;await IDBREADY;let mg=null;try{mg=localStorage.getItem("custmig")}catch(e){}
