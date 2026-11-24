@@ -202,7 +202,7 @@ function render0(){
    const pe=pspent(),rb=pbal()-pe,mine=rb-(tc-ts);
    A.innerHTML=`<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 175px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))"><div style="display:flex;align-items:center;gap:10px;margin:6px 0 14px"><h1 style="margin:0">الرئيسية</h1><button class="btn g" style="padding:4px 10px;margin:0" title="تحديث" onclick="doRefresh()">🔄</button></div><div style="margin:auto 0"><div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${S.sites.length} موقع</span></span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
    <div class="card site" onclick="view='proj';render();scrollTo(0,0)"><div class="row"><span class="n">🏗️ حالة المواقع</span><span class="m">${(PJ.items||[]).length} موقع</span></div></div>${VIEWU?"":`<div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div>`}<div class="card site" onclick="view='att';render();scrollTo(0,0)"><div class="row"><span class="n">📅 الحضور والتمام</span><span class="m">${AT.emps.length} موظف</span></div></div>${(isMgr()||OVIEW)&&!inEmpVA()?`<div class="card site" onclick="usOpen()"><div class="row"><span class="n">👥 فريقي</span><span class="m">${UL.m.length} موظف</span></div></div>`:""}${VIEWU?"":`<div class="card site" onclick="view='p2p';render();scrollTo(0,0)"><div class="row"><span class="n">🖼️ Photo to Pdf</span><span class="m">على الجهاز فقط</span></div></div>`}`+
-   `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(dispName(ME.email))+" · v1"+(isMgr()?" · مدير":""):""}</div></div>`;
+   `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(dispName(ME.email))+" · v22"+(isMgr()?" · مدير":""):""}</div></div>`;
    T.style.display="none";
   }else if(view==="users"){T.style.display="none";
    const mm=UL.m,nm=x=>esc(x.name||dispName(x.email))+(x.name?` <span class="m" dir="ltr">${esc(dispName(x.email))}</span>`:"");
@@ -666,7 +666,7 @@ window.CLOUD={
   setProj:o=>sd(doc(db,...U("meta","projects")),o),
  setAtt:o=>{const r=attRef();return r?sd(r,o):Promise.resolve()},
  async ownAtt(){const d=await getDoc(doc(db,"users",uid,"meta","att"));return d.exists()?d.data():null},
- async teamAtts(){const out=[],s=await getDocs(query(collection(db,"members"),where("mgr","==",oviewUid||uid)));
+ async teamAtts(){const out=[],s=await getDocs(collection(db,"teams",oviewUid||uid,"staff"));
   const ms=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(x.at||0)-(y.at||0));
   for(const m of ms){const d=await getDoc(doc(db,"users",m.id,"meta","att"));if(d.exists())out.push(d.data())}
   return out},
@@ -686,15 +686,18 @@ window.CLOUD={
   un.push(onSnapshot(doc(db,"config","branding"),d=>{window.BR=d.exists()?d.data():null},e=>console.warn(e)));
   if(attRef())un.push(onSnapshot(attRef(),d=>{if(d.metadata.hasPendingWrites)return;if(window.onAtt)window.onAtt(d.exists()?d.data():null,d.metadata.fromCache)},e=>console.warn(e)));
   if(window.ROLE==="manager"||oviewUid){let M=[];const push=()=>{if(window.onUsers)window.onUsers(M,[],[])};
-   un.push(onSnapshot(query(collection(db,"members"),where("mgr","==",oviewUid||uid)),s=>{M=s.docs.map(d=>({id:d.id,...d.data()}));M.sort((x,y)=>(x.at||0)-(y.at||0));push()},e=>console.warn(e)))}},
+   un.push(onSnapshot(collection(db,"teams",oviewUid||uid,"staff"),s=>{M=s.docs.map(d=>({id:d.id,...d.data()}));M.sort((x,y)=>(x.at||0)-(y.at||0));push()},e=>console.warn(e)))}},
  viewAs(id){viewUid=((window.ROLE==="manager"||oviewUid)&&id)?id:null},
  oviewAs(id){oviewUid=(window.ROLE==="owner"&&id)?id:null},
  async findMgr(em){const s=await getDocs(query(collection(db,"members"),where("email","==",String(em||"").toLowerCase())));
   const d=s.docs.find(x=>x.data().role==="manager"&&x.data().active===true)||s.docs.find(x=>x.data().role==="manager");return d?{id:d.id,...d.data()}:null},
  async addUser(email,pw,name){let a2;try{a2=getApp("sec")}catch(e){a2=initializeApp(CFG,"sec")}
   const au=getAuth(a2);const c=await createUserWithEmailAndPassword(au,email,pw);const id=c.user.uid;try{await signOut(au)}catch(e){}
-  await setDoc(doc(db,"members",id),{email:email.toLowerCase(),name:name||"",active:true,at:Date.now(),role:"employee",mgr:auth.currentUser.uid})},
- setActive:(id,on)=>setDoc(doc(db,"members",id),{active:!!on},{merge:true}),
+  const now=Date.now(),mgr=auth.currentUser.uid,rec={email:email.toLowerCase(),name:name||"",active:true,at:now,role:"employee",mgr:mgr};
+  await setDoc(doc(db,"members",id),rec);
+  await setDoc(doc(db,"teams",mgr,"staff",id),rec)},
+ async setActive(id,on){await setDoc(doc(db,"members",id),{active:!!on},{merge:true});
+  if(window.ROLE==="manager"&&auth.currentUser)await setDoc(doc(db,"teams",auth.currentUser.uid,"staff",id),{active:!!on},{merge:true})},
  resetFor:e=>sendPasswordResetEmail(auth,e),
  async ownerLoad(){const a=await getDoc(doc(db,"config","managers")),b=await getDoc(doc(db,"config","branding"));return{m:a.exists()?a.data():{},b:b.exists()?b.data():{}}},
  async ownerSetEmails(fn){const r=doc(db,"config","managers"),s=await getDoc(r);if(!s.exists())throw{code:"not-found"};const cur=Array.isArray(s.data().emails)?s.data().emails:[],nx=fn(cur.slice());await setDoc(r,{emails:nx},{merge:true});return nx},
@@ -705,6 +708,13 @@ window.CLOUD={
 let vTimer=null,vSent=null;
 function stopV(){if(vTimer){clearInterval(vTimer);vTimer=null}}
 function regMgr(u,em){return setDoc(doc(db,"members",u.uid),{email:em,name:"",active:true,at:Date.now(),role:"manager"}).catch(e=>{console.warn(e);window.onPending(u,"err")})}
+async function staffHeal(id,md){
+ try{
+  const r=doc(db,"teams",String(md.mgr),"staff",id),s=await getDoc(r);
+  if(!s.exists())await setDoc(r,{email:String(md.email||"").toLowerCase(),name:String(md.name||""),active:true,at:+md.at||Date.now(),role:"employee",mgr:String(md.mgr)});
+  else{const x=s.data()||{},nm=String(md.name||"");if(String(x.name||"")!==nm)await setDoc(r,{name:nm,at:+md.at||Date.now()},{merge:true})}
+ }catch(e){console.warn(e)}
+}
 function waitVerify(u,em,tok){
  window.onPending(u,"verify");
  if(vSent!==u.uid){vSent=u.uid;sendEmailVerification(u).catch(e=>console.warn(e))}
@@ -721,7 +731,7 @@ onAuthStateChanged(auth,u=>{
  const tok=++authTok;let fin=false;
  const go=()=>{if(fin||tok!==authTok)return;fin=true;
  roleUn=onSnapshot(doc(db,"members",u.uid),d=>{
-   if(d.exists()&&d.data().active===true){const nr=d.data().role==="manager"?"manager":"user",nt=nr==="manager"?u.uid:String(d.data().mgr||"");if(okUid!==u.uid||window.ROLE!==nr||window.TID!==nt){okUid=u.uid;window.ROLE=nr;window.TID=nt;window.onAuth(u)}return}
+   if(d.exists()&&d.data().active===true){const md=d.data(),nr=md.role==="manager"?"manager":"user",nt=nr==="manager"?u.uid:String(md.mgr||"");if(nr==="user"&&md.mgr)staffHeal(u.uid,md);if(okUid!==u.uid||window.ROLE!==nr||window.TID!==nt){okUid=u.uid;window.ROLE=nr;window.TID=nt;window.onAuth(u)}return}
    if(d.metadata.fromCache&&!d.exists())return;
    okUid=null;
    if(d.exists()){window.onPending(u,"off");return}
