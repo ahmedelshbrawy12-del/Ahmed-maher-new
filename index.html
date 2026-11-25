@@ -193,16 +193,16 @@ function navRestore(){let x=null;try{x=JSON.parse(sessionStorage.getItem("cust_n
 function render(){try{if(PEND&&S&&Array.isArray(S.sites)){const s0=S.sites.find(z=>z.id===PEND.c);if(s0){view=PEND.v;cur=PEND.c;PEND=null}}render0();navSave();typeof stkRefresh==="function"&&stkRefresh()}catch(e){console.warn(e);if(window.__show)__show("RENDER: "+e.message)}}
 function render0(){
  if(window.ROLE==="owner"&&ME&&!OVIEW){document.body.classList.remove("rep");ownerRender();return}
- if(VIEWU&&(view==="personal"||view==="notes"||view==="note"||view==="p2p"))view="main";
+ if(VIEWU&&(view==="personal"||view==="notes"||view==="note"||view==="p2p"))view="main";if(viewGM()&&view!=="main"&&view!=="users"&&view!=="team")view="main";
  document.body.classList.toggle("rep",view==="report"||view==="sreport");p2Show();typeof slShow==="function"&&slShow();typeof pmShow==="function"&&pmShow();
  const A=$("app"),T=$("tot");
  if(!Array.isArray(S.sites))S.sites=[];
  const tc=S.sites.reduce((a,s)=>a+s.custody,0),ts=S.sites.reduce((a,s)=>a+spent(s),0);
  if(view==="main"){
    const pe=pspent(),rb=pbal()-pe,mine=rb-(tc-ts);
-   A.innerHTML=`<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 175px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))"><div style="display:flex;align-items:center;gap:10px;margin:6px 0 14px"><h1 style="margin:0">الرئيسية</h1><button class="btn g" style="padding:4px 10px;margin:0" title="تحديث" onclick="doRefresh()">🔄</button></div><div style="margin:auto 0">${(isMgr()&&!VIEWU)?"":`<div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${S.sites.length} موقع</span></span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
-   <div class="card site" onclick="view='proj';render();scrollTo(0,0)"><div class="row"><span class="n">🏗️ حالة المواقع</span><span class="m">${(PJ.items||[]).length} موقع</span></div></div>`}${(VIEWU||isMgr())?"":`<div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div>`}${(isMgr()&&!VIEWU)?"":`<div class="card site" onclick="view='att';render();scrollTo(0,0)"><div class="row"><span class="n">📅 الحضور والتمام</span><span class="m">${AT.emps.length} موظف</span></div></div>`}${(canTeam()||OVIEW)&&!inEmpVA()?`<div class="card site" onclick="usOpen()"><div class="row"><span class="n">👥 فريقي</span><span class="m">${UL.m.length} ${(OVIEW||isMgr())?"مدير":"موظف"}</span></div></div>`:""}${(VIEWU||isMgr())?"":`<div class="card site" onclick="view='p2p';render();scrollTo(0,0)"><div class="row"><span class="n">🖼️ Photo to Pdf</span><span class="m">على الجهاز فقط</span></div></div>`}`+
-   `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(dispName(ME.email))+" · v24"+roleLbl():""}</div></div>`;
+   A.innerHTML=`<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 175px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))"><div style="display:flex;align-items:center;gap:10px;margin:6px 0 14px"><h1 style="margin:0">الرئيسية</h1><button class="btn g" style="padding:4px 10px;margin:0" title="تحديث" onclick="doRefresh()">🔄</button></div><div style="margin:auto 0">${((isMgr()&&!VIEWU)||viewGM())?"":`<div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${S.sites.length} موقع</span></span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
+   <div class="card site" onclick="view='proj';render();scrollTo(0,0)"><div class="row"><span class="n">🏗️ حالة المواقع</span><span class="m">${(PJ.items||[]).length} موقع</span></div></div>`}${(VIEWU||isMgr())?"":`<div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div>`}${((isMgr()&&!VIEWU)||viewGM())?"":`<div class="card site" onclick="view='att';render();scrollTo(0,0)"><div class="row"><span class="n">📅 الحضور والتمام</span><span class="m">${AT.emps.length} موظف</span></div></div>`}${(canTeam()||OVIEW)&&!inEmpVA()?`<div class="card site" onclick="usOpen()"><div class="row"><span class="n">👥 فريقي</span><span class="m">${UL.m.length} ${(OVIEW||isMgr())?"مدير":"موظف"}</span></div></div>`:""}${(VIEWU||isMgr())?"":`<div class="card site" onclick="view='p2p';render();scrollTo(0,0)"><div class="row"><span class="n">🖼️ Photo to Pdf</span><span class="m">على الجهاز فقط</span></div></div>`}`+
+   `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(dispName(ME.email))+roleLbl():""}</div></div>`;
    T.style.display="none";
   }else if(view==="users"){T.style.display="none";
    const rov=!!OVIEW,inT=!!LT,mm=inT?UL.t:UL.m,lv=usLvl(),nm=x=>esc(x.name||dispName(x.email))+(x.name?` <span class="m" dir="ltr">${esc(dispName(x.email))}</span>`:"");
@@ -380,6 +380,7 @@ function toEmail(v){v=String(v||"").trim();return v.indexOf("@")<0?v.toLowerCase
 function dispName(e){e=String(e||"");return e.toLowerCase().endsWith(UDOM)?e.slice(0,-UDOM.length):e}
 
 function isMgr(){return window.ROLE==="manager"}
+function viewGM(){return window.ROLE==="owner"&&!!OVIEW&&!!VIEWU&&VIEWU.uid===OVIEW.uid}
 function canManage(){return isMgr()||window.LEAD===true}
 function canTeam(){return window.ROLE==="manager"||window.LEAD===true}
 function roleLbl(){return window.ROLE==="manager"?" · مدير عام":window.ROLE==="user"?(window.WORKER?" · موظف":" · مدير"):""}
@@ -420,7 +421,7 @@ function usTeam(id){const m=UL.m.find(x=>x.id===id);if(!m||!m.isLead)return;LT={
 function usTeamBack(){LT=null;UL.t=[];try{CLOUD.setTeam(null)}catch(e){}render();scrollTo(0,0)}
 async function usReset(em){if(!em||!confirm("إرسال رابط تغيير الباسورد على "+em+"؟"))return;try{await CLOUD.resetFor(em);alert("تم الإرسال")}catch(e){alert(lerrTxt(e))}}
 function usView(id){const m=UL.m.find(x=>x.id===id)||UL.t.find(x=>x.id===id);if(!m||!(canManage()||OVIEW))return;
- VIEWU={uid:id,email:m.email};CLOUD.viewAs(id);for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];
+ VIEWU={uid:id,email:m.email};window.ATV={u:id,t:String(m.role==="manager"?id:m.lead?m.lead:m.isLead===true?id:(m.mgr||""))||null};CLOUD.viewAs(id);for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];
  S={sites:[]};P={inc:[],exp:[]};LAST={};SYNC=false;PERS_INIT=false;view="main";cur=null;PEND=null;
  const pu={uid:id,email:m.email};notesReset(pu);pjReset(pu);attReset(pu);
  vbar();render();scrollTo(0,0);CLOUD.start();bgImgs()}
@@ -659,7 +660,7 @@ const U=(...p)=>["users",viewUid||oviewUid||uid,...p];
 const RO=()=>!!viewUid||!!oviewUid||(typeof VIEWU!=="undefined"&&!!VIEWU);
 const sd=(r,o,m)=>RO()?Promise.resolve():(m?setDoc(r,o,m):setDoc(r,o));
 const dd=r=>RO()?Promise.resolve():deleteDoc(r);
-const attTid=()=>window.TID;
+const attTid=()=>{const a=window.ATV;return(a&&typeof VIEWU!=="undefined"&&VIEWU&&VIEWU.uid===a.u&&a.t)?a.t:window.TID};
 const attRef=()=>{const t=attTid();return t?doc(db,"teams",t,"attendance","main"):null};
 window.CLOUD={
  login:(e,p)=>signInWithEmailAndPassword(auth,e,p),
@@ -1010,7 +1011,7 @@ addEventListener("pagehide",()=>noteSave(0));
 let ATP=1,ATT=null,ATE=null,ATY=new Date().getFullYear(),ATM=0,ATUID=null;
 const AT_MON=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 const AT_DAY=["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"];
-const atKey=()=>"custatt_team_"+(window.TID||"");
+const atKey=()=>{const a=window.ATV;return "custatt_team_"+(((a&&typeof VIEWU!=="undefined"&&VIEWU&&VIEWU.uid===a.u&&a.t)?a.t:window.TID)||"")};
 let ATMIG=false,ATMISS=false;
 function attRO(){return !!VIEWU&&!(window.ROLE==="manager"||window.LEAD===true||window.ROLE==="owner")}
 function atLocal(){if(attRO())return;try{localStorage.setItem(atKey(),JSON.stringify(AT))}catch(e){}}
