@@ -201,11 +201,11 @@ function render0(){
  if(view==="main"){
    const pe=pspent(),rb=pbal()-pe,mine=rb-(tc-ts);
    A.innerHTML=`<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 175px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))"><div style="display:flex;align-items:center;gap:10px;margin:6px 0 14px"><h1 style="margin:0">الرئيسية</h1><button class="btn g" style="padding:4px 10px;margin:0" title="تحديث" onclick="doRefresh()">🔄</button></div><div style="margin:auto 0">${((isMgr()&&!VIEWU)||viewGM())?"":`<div class="card site" onclick="view='home';render()"><div class="row"><span class="n">💼 عهدة المواقع</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${S.sites.length} موقع</span></span></div><div class="row m" style="margin-top:6px"><span>إجمالي العهد: ${f(tc)}</span><span class="${tc-ts<0?'bad':'ok'}">المتبقي: ${f(tc-ts)}</span></div></div>
-   <div class="card site" onclick="view='proj';render();scrollTo(0,0)"><div class="row"><span class="n">🏗️ حالة المواقع</span><span class="m">${(PJ.items||[]).length} موقع</span></div></div>`}${(VIEWU||isMgr())?"":`<div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div>`}${((isMgr()&&!VIEWU)||viewGM())?"":`<div class="card site" onclick="view='att';render();scrollTo(0,0)"><div class="row"><span class="n">📅 الحضور والتمام</span><span class="m">${AT.emps.length} موظف</span></div></div>`}${(canTeam()||OVIEW)&&!inEmpVA()?`<div class="card site" onclick="usOpen()"><div class="row"><span class="n">👥 فريقي</span><span class="m">${UL.m.length} ${(OVIEW||isMgr())?"مدير":"موظف"}</span></div></div>`:""}${(VIEWU||isMgr())?"":`<div class="card site" onclick="view='p2p';render();scrollTo(0,0)"><div class="row"><span class="n">🖼️ Photo to Pdf</span><span class="m">على الجهاز فقط</span></div></div>`}`+
+   <div class="card site" onclick="view='proj';render();scrollTo(0,0)"><div class="row"><span class="n">🏗️ حالة المواقع</span><span class="m">${(PJ.items||[]).length} موقع</span></div></div>`}${(VIEWU||isMgr())?"":`<div class="card site" onclick="view='personal';render()"><div class="row"><span class="n">👤 مصروفاتي الشخصية</span><span style="display:flex;align-items:center;gap:8px"><span class="m">${P.exp.length} مصروف</span></span></div><div class="row m" style="margin-top:6px"><span>المتبقي من الرصيد: ${f(rb)}</span><span class="${mine<0?'bad':'ok'}">فلوسي: ${f(mine)}</span></div></div><div class="card site" onclick="view='notes';render();scrollTo(0,0)"><div class="row"><span class="n">📝 ملاحظاتي</span><span class="m">${(N.notes||[]).length} ملاحظة</span></div></div>`}${((isMgr()&&!VIEWU)||viewGM())?"":`<div class="card site" onclick="view='att';render();scrollTo(0,0)"><div class="row"><span class="n">📅 الحضور والتمام</span><span class="m">${AT.emps.length} موظف</span></div></div>`}${((canTeam()||OVIEW)&&!inEmpVA())||vMgrV()?`<div class="card site" onclick="${vMgrV()?"usVTeam()":"usOpen()"}"><div class="row"><span class="n">👥 فريقي</span><span class="m">${vMgrV()?"فريق المدير":UL.m.length+" "+((OVIEW||isMgr())?"مدير":"موظف")}</span></div></div>`:""}${(VIEWU||isMgr())?"":`<div class="card site" onclick="view='p2p';render();scrollTo(0,0)"><div class="row"><span class="n">🖼️ Photo to Pdf</span><span class="m">على الجهاز فقط</span></div></div>`}`+
    `<div style="margin-top:12px;text-align:center"><button class="btn r" onclick="chPin()">🔑 تغيير الرقم السري</button><button class="btn r" onclick="lockApp()">🚪 تسجيل الخروج</button><button class="btn r" onclick="exportData()">📤 تصدير البيانات</button><button class="btn r" onclick="importData()">📥 استيراد البيانات</button></div></div><div class="m" dir="ltr" style="text-align:center;padding:10px 0 4px">${ME?esc(dispName(ME.email))+roleLbl():""}</div></div>`;
    T.style.display="none";
   }else if(view==="users"){T.style.display="none";
-   const rov=!!OVIEW,inT=!!LT,mm=inT?UL.t:UL.m,lv=usLvl(),nm=x=>esc(x.name||dispName(x.email))+(x.name?` <span class="m" dir="ltr">${esc(dispName(x.email))}</span>`:"");
+   const rov=!!OVIEW||!!VIEWU,inT=!!LT,mm=inT?UL.t:UL.m,lv=usLvl(),nm=x=>esc(x.name||dispName(x.email))+(x.name?` <span class="m" dir="ltr">${esc(dispName(x.email))}</span>`:"");
    A.innerHTML=`<div class="row"><button class="btn g" onclick="${inT?"usTeamBack()":"view='main';render()"}">→ رجوع</button></div><h1>${inT?"👥 فريق "+esc(LT.name||dispName(LT.email)):"👥 فريقي"}</h1>${rov?"":`<div class="row" style="margin-bottom:10px"><button class="btn" onclick="usAdd()">＋ تسجيل ${lv} جديد</button></div>`}`+
    `<div class="row" style="margin:12px 0 6px"><b>✅ ${lv==="مدير"?"مديروك":"موظفوك"} المسجّلون (${mm.length})</b></div>`+
    (mm.map(x=>`<div class="card ex"><div class="n">${nm(x)}</div><div class="m" style="margin-top:2px">👷 ${lv}${x.isLead?" · 🧑‍🤝‍🧑 ليه فريق":""}</div><div class="${x.active===false?'bad':'ok'}" style="margin:4px 0">${x.active===false?"⏸ موقوف":"🟢 مفعّل"}</div><div class="row"><button class="btn g" onclick="usView('${esc(x.id)}')">👁️ بياناته</button>${(x.isLead&&!inT)?`<button class="btn g" onclick="usTeam('${esc(x.id)}')">👥 فريقه</button>`:""}${rov?"":`<button class="btn r" onclick="usToggle('${esc(x.id)}',${x.active===false})">${x.active===false?"▶ تفعيل":"⏸ إيقاف"}</button><button class="btn r" onclick="usRename('${esc(x.id)}')">✏️ الاسم</button>${(isMgr()&&!inT)?`<button class="btn r" onclick="usLead('${esc(x.id)}',${!x.isLead})">${x.isLead?"إلغاء الفريق":"🧑‍🤝‍🧑 ليه فريق"}</button>`:""}${String(x.email||"").toLowerCase().endsWith(UDOM)?"":`<button class="btn r" onclick="usReset('${esc(x.email||"")}')">🔑 باسورد</button>`}`}</div></div>`).join("")||`<div class="m" style="padding:10px">لسه مفيش ${lv==="مدير"?"مديرين":"موظفين"}.</div>`);
@@ -401,11 +401,13 @@ window.onPending=function(u,why){
  render()};
 function vbar(){let b=$("vb");if(!b){b=document.createElement("div");b.id="vb";b.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#b45309;color:#fff;padding:8px 12px;display:none;align-items:center;justify-content:space-between;gap:8px;font-size:14px";document.body.appendChild(b)}
  if(VIEWU){b.style.display="flex";
-  if(OVIEW&&VIEWU.uid!==OVIEW.uid)b.innerHTML=`<span>👁️ بتشوف بيانات: <b dir="ltr">${esc(dispName(VIEWU.email))}</b> — فريق المدير العام ${esc(OVIEW.name||dispName(OVIEW.email))} (قراءة فقط، ماعدا الحضور والتمام)</span><button class="btn g" style="margin:0;padding:4px 10px;flex-shrink:0" onclick="usBack()">رجوع لبيانات المدير العام</button>`;
-  else if(OVIEW)b.innerHTML=`<span>👁️ بتشوف بيانات المدير العام: <b>${esc(OVIEW.name||dispName(OVIEW.email))}</b> (قراءة فقط، ماعدا الحضور والتمام)</span><button class="btn g" style="margin:0;padding:4px 10px;flex-shrink:0" onclick="ovBack()">رجوع للمديرين العامين</button>`;
-  else b.innerHTML=`<span>👁️ بتشوف بيانات: <b dir="ltr">${esc(dispName(VIEWU.email))}</b> (قراءة فقط، ماعدا الحضور والتمام)</span><button class="btn g" style="margin:0;padding:4px 10px;flex-shrink:0" onclick="usBack()">رجوع لحسابي</button>`;
+  if(OVIEW&&VIEWU.uid!==OVIEW.uid)b.innerHTML=`<span>👁️ بتشوف بيانات: <b dir="ltr">${esc(dispName(VIEWU.email))}</b> — فريق المدير العام ${esc(OVIEW.name||dispName(OVIEW.email))}</span><button class="btn g" style="margin:0;padding:4px 10px;flex-shrink:0" onclick="usBack()">${window.VPREV?"رجوع لبيانات المدير":"رجوع لبيانات المدير العام"}</button>`;
+  else if(OVIEW)b.innerHTML=`<span>👁️ بتشوف بيانات المدير العام: <b>${esc(OVIEW.name||dispName(OVIEW.email))}</b></span><button class="btn g" style="margin:0;padding:4px 10px;flex-shrink:0" onclick="ovBack()">رجوع للمديرين العامين</button>`;
+  else b.innerHTML=`<span>👁️ بتشوف بيانات: <b dir="ltr">${esc(dispName(VIEWU.email))}</b></span><button class="btn g" style="margin:0;padding:4px 10px;flex-shrink:0" onclick="usBack()">رجوع لحسابي</button>`;
   document.body.style.paddingBottom="52px"}
  else{b.style.display="none";document.body.style.paddingBottom=""}}
+function vMgrV(){return !!(VIEWU&&window.VMG&&window.VMG===VIEWU.uid&&!viewGM())}
+function usVTeam(){if(!vMgrV())return;LT={uid:VIEWU.uid,email:VIEWU.email,name:window.VMN||"",v:1};UL.t=[];try{CLOUD.setTeam(VIEWU.uid)}catch(e){}view="users";render();scrollTo(0,0)}
 function usOpen(){LT=null;UL.t=[];try{CLOUD.setTeam(null)}catch(e){}view="users";render();scrollTo(0,0)}
 function usLvl(){return LT?"موظف":((OVIEW||isMgr())?"مدير":"موظف")}
 function usAdd(){const fl=(isMgr()&&!LT&&!OVIEW)?`<label class="m" style="display:flex;align-items:center;gap:8px;margin:6px 0"><input id="ulf" type="checkbox" style="width:auto;margin:0"> 🧑‍🤝‍🧑 ليه فريق (يقدر يضيف موظفين تحته)</label>`:"";dlg(`<h3>＋ تسجيل ${usLvl()} جديد</h3><input id="ue" type="text" dir="ltr" autocapitalize="none" autocorrect="off" placeholder="اسم المستخدم (إنجليزي بدون مسافات)" style="letter-spacing:0;font-size:16px"><input id="un" placeholder="الاسم بالعربي (اختياري)" style="font-size:16px"><input id="up" type="text" dir="ltr" placeholder="باسورد مؤقت (6 على الأقل)" style="letter-spacing:0;font-size:16px">${fl}<div id="ux" class="m" style="color:#e5484d;min-height:20px"></div><div class="row" style="margin-top:8px"><button class="btn" id="usb" onclick="usAddGo()">تسجيل</button><button class="btn g" onclick="$('dlg').close()">إلغاء</button></div>`)}
@@ -418,14 +420,18 @@ async function usToggle(id,on){if(!on&&!confirm("إيقاف المستخدم د�
 async function usLead(id,on){if(!isMgr()||LT)return;if(!on&&!confirm("إلغاء الفريق من المستخدم ده؟ الموظفين اللي تحته هيفضلوا شغالين بس مش هيقدر يضيف تاني."))return;try{await CLOUD.setLead(id,on)}catch(e){cerr(e)}}
 async function usRename(id){const L=LT?UL.t:UL.m,m=L.find(x=>x.id===id);if(!m)return;const n=prompt("الاسم الجديد:",m.name||"");if(n===null)return;try{await CLOUD.setName(id,n.trim().slice(0,60),LT?LT.uid:null)}catch(e){cerr(e)}}
 function usTeam(id){const m=UL.m.find(x=>x.id===id);if(!m||!m.isLead)return;LT={uid:id,email:m.email,name:m.name||""};UL.t=[];try{CLOUD.setTeam(id)}catch(e){}render();scrollTo(0,0)}
-function usTeamBack(){LT=null;UL.t=[];try{CLOUD.setTeam(null)}catch(e){}render();scrollTo(0,0)}
+function usTeamBack(){const v=LT&&LT.v;LT=null;UL.t=[];try{CLOUD.setTeam(null)}catch(e){}if(v)view="main";render();scrollTo(0,0)}
 async function usReset(em){if(!em||!confirm("إرسال رابط تغيير الباسورد على "+em+"؟"))return;try{await CLOUD.resetFor(em);alert("تم الإرسال")}catch(e){alert(lerrTxt(e))}}
 function usView(id){const m=UL.m.find(x=>x.id===id)||UL.t.find(x=>x.id===id);if(!m||!(canManage()||OVIEW))return;
+ const vp=(LT&&LT.v&&VIEWU)?VIEWU.uid:null;window.VPREV=vp;window.VMG=(!vp&&(m.isLead===true||m.role==="manager"||(!!OVIEW&&UL.m.some(x=>x.id===id))))?id:null;window.VMN=m.name||"";
+ if(LT){LT=null;UL.t=[];try{CLOUD.setTeam(null)}catch(e){}}
  VIEWU={uid:id,email:m.email};window.ATV={u:id,t:String(m.role==="manager"?id:m.lead?m.lead:m.isLead===true?id:(m.mgr||""))||null};CLOUD.viewAs(id);for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];
  S={sites:[]};P={inc:[],exp:[]};LAST={};SYNC=false;PERS_INIT=false;view="main";cur=null;PEND=null;
  const pu={uid:id,email:m.email};notesReset(pu);pjReset(pu);attReset(pu);
  vbar();render();scrollTo(0,0);CLOUD.start();bgImgs()}
 function usBack(){
+ if(window.VPREV&&(UL.m.some(x=>x.id===window.VPREV))){const p=window.VPREV;usView(p);return}
+ window.VMG=null;window.VPREV=null;
  if(OVIEW){
   if(!VIEWU||VIEWU.uid===OVIEW.uid){ovBack();return}
   const pu={uid:OVIEW.uid,email:OVIEW.email};VIEWU={uid:OVIEW.uid,email:OVIEW.email};
@@ -514,7 +520,7 @@ function ovEnter(m){OVIEW={uid:m.id,email:String(m.email||""),name:String(m.name
  S={sites:[]};P={inc:[],exp:[]};LAST={};SYNC=false;PERS_INIT=false;view="main";cur=null;PEND=null;SETTLE=null;
  const pu={uid:m.id,email:OVIEW.email};notesReset(pu);pjReset(pu);attReset(pu);
  vbar();render();scrollTo(0,0);CLOUD.start();bgImgs()}
-function ovBack(){OVIEW=null;VIEWU=null;window.TID=null;try{CLOUD.oviewAs(null);CLOUD.viewAs(null)}catch(e){}
+function ovBack(){window.VMG=null;window.VPREV=null;OVIEW=null;VIEWU=null;window.TID=null;try{CLOUD.oviewAs(null);CLOUD.viewAs(null)}catch(e){}
  for(const k in IMG)delete IMG[k];for(const k in IMGLOCAL)delete IMGLOCAL[k];vbar();window.onOwner(ME)}
 // ===== هوية الشركة في التقارير =====
 const BR_LAYS=[["banner","بانر عرض كامل","اللوجو بعرض الصفحة كلها فوق (للصور العريضة)"],["center","لوجو في النص","اللوجو في النص والاسم والشعار تحته"],["side","لوجو يمين والنص جنبه","اللوجو على اليمين والاسم والشعار على شماله"],["text","نص بس","من غير لوجو، الاسم والشعار بس"]];
@@ -643,7 +649,9 @@ window.addEventListener("popstate",function(){
  if(view==="attper"){view="attyear";render();scrollTo(0,0);return}
  if(view==="attyear"){view="att";render();scrollTo(0,0);return}
  if(view==="att"){view="main";render();scrollTo(0,0);return}
+ if(view==="users"&&typeof LT!=="undefined"&&LT){usTeamBack();return}
  if(view==="home"||view==="personal"||view==="notes"||view==="proj"||view==="users"){view="main";render();scrollTo(0,0);return}
+ if(typeof VIEWU!=="undefined"&&VIEWU&&view==="main"){try{usBack()}catch(e){}return}
  exitAsk();
 });
 </script>
@@ -698,7 +706,7 @@ window.CLOUD={
   if(window.ROLE==="manager"||window.LEAD===true||oviewUid){let M=[];const push=()=>{if(window.onUsers)window.onUsers(M,[],[])};
    un.push(onSnapshot(collection(db,"teams",oviewUid||uid,"staff"),s=>{M=s.docs.map(d=>({id:d.id,...d.data()}));M.sort((x,y)=>(x.at||0)-(y.at||0));push()},e=>console.warn(e)))}},
  viewAs(id){viewUid=((window.ROLE==="manager"||window.LEAD===true||oviewUid)&&id)?id:null},
- setTeam(id){if(tSub){try{tSub()}catch(e){}tSub=null}if(id&&(window.ROLE==="manager"||oviewUid))tSub=onSnapshot(collection(db,"teams",id,"staff"),s=>{const t=s.docs.map(d=>({id:d.id,...d.data()}));t.sort((x,y)=>(x.at||0)-(y.at||0));if(window.onTeam)window.onTeam(t)},e=>console.warn(e))},
+ setTeam(id){if(tSub){try{tSub()}catch(e){}tSub=null}if(id&&(window.ROLE==="manager"||window.ROLE==="owner"||oviewUid))tSub=onSnapshot(collection(db,"teams",id,"staff"),s=>{const t=s.docs.map(d=>({id:d.id,...d.data()}));t.sort((x,y)=>(x.at||0)-(y.at||0));if(window.onTeam)window.onTeam(t)},e=>console.warn(e))},
  oviewAs(id){oviewUid=(window.ROLE==="owner"&&id)?id:null},
  async findMgr(em){const s=await getDocs(query(collection(db,"members"),where("email","==",String(em||"").toLowerCase())));
   const d=s.docs.find(x=>x.data().role==="manager"&&x.data().active===true)||s.docs.find(x=>x.data().role==="manager");return d?{id:d.id,...d.data()}:null},
