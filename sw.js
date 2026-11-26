@@ -1,4 +1,4 @@
-const V="custody-v8",SHELL=["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png"];
+const V="custody-v9",SHELL=["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png"];
 const SDK=[
  "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js",
  "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js",
@@ -27,4 +27,3 @@ self.addEventListener("fetch",e=>{const r=e.request,u=new URL(r.url);if(r.method
  if(u.origin===location.origin){e.respondWith(netFirst(r))}
  else if(u.hostname==="www.gstatic.com"||u.hostname==="cdnjs.cloudflare.com"){
   e.respondWith(caches.open(V).then(c=>c.match(r).then(h=>{const n=fetch(r).then(x=>{if(x&&x.ok)c.put(r,x.clone());return x}).catch(()=>h);return h||n})))}});
-
