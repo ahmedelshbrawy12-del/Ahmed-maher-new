@@ -137,8 +137,11 @@ let P={inc:[],exp:[]};try{const x=JSON.parse(localStorage.getItem("custpers")||"
 const LEG={S:JSON.parse(JSON.stringify(S)),P:JSON.parse(JSON.stringify(P))};
 const pbal=()=>(P.inc||[]).reduce((a,e)=>a+(+e.amt||0),0);
 const pspent=()=>(P.exp||[]).reduce((a,e)=>a+(+e.amt||0),0);
-const saveP=()=>{if(VIEWU)return;cloudPers()};
-const save=()=>{if(VIEWU)return;cloudSites()};
+const saveP=()=>{if(VIEWU)return;cloudPers();mSave()};
+const save=()=>{if(VIEWU)return;cloudSites();mSave()};
+const MKEY=u=>"custm_"+u;
+function mSave(){try{if(!ME||VIEWU)return;localStorage.setItem(MKEY(ME.uid),JSON.stringify({s:S,p:P,t:Date.now()}))}catch(e){}}
+function mLoad(u){try{const x=JSON.parse(localStorage.getItem(MKEY(u))||"null");if(x&&x.s&&Array.isArray(x.s.sites))return x}catch(e){}return null}
 function imgBlock(s){const L=s.expenses.filter(e=>e.img||IMG[e.id]);if(!L.length)return"";
  return `<div class="im"><div class="ih">صور الفواتير - ${esc(s.name)}</div><div class="ig">${L.map(e=>`<figure><img src="${IMG[e.id]||e.img}" onclick="showImg('${e.id}')"><figcaption>${esc(e.desc)} - ${f(e.amt)}</figcaption></figure>`).join("")}</div></div>`}
 function siteBlock(s){
@@ -590,20 +593,22 @@ async function migrate(){if(VIEWU)return;await IDBREADY;let mg=null;try{mg=local
  if(!P.inc.length&&!P.exp.length){P.inc=JSON.parse(JSON.stringify(LEG.P.inc));P.exp=JSON.parse(JSON.stringify(LEG.P.exp))}
  for(const s of S.sites)for(const e of s.expenses){if(IMG[e.id])await cloudImg(e.id,IMG[e.id])}
  cloudSites();cloudPers();try{localStorage.setItem("custmig",ME.uid)}catch(e){}
- render();alert("تم نقل بياناتك القديمة إلى حسابك")}
+ mSave();render();alert("تم نقل بياناتك القديمة إلى حسابك")}
 window.onSites=function(list,fromCache){if(!ME)return;const first=!SYNC;
- if(first&&!list.length){if(fromCache)return;SYNC=true;if(VIEWU)render();else migrate();return}
+ if(first&&!list.length&&fromCache)return;
+ if(first&&!list.length){SYNC=true;S={sites:[]};LAST={};mSave();if(VIEWU)render();else migrate();return}
  SYNC=true;list=normSites(list);list.sort((a,b)=>(parseInt(a.id.slice(1))||0)-(parseInt(b.id.slice(1))||0)||(a.id<b.id?-1:1));
- S.sites=list;LAST={};list.forEach(s=>LAST[s.id]=JSON.stringify(s));
+ S.sites=list;LAST={};list.forEach(s=>LAST[s.id]=JSON.stringify(s));mSave();
  if(cur&&!S.sites.find(x=>x.id===cur)&&(view==="site"||view==="sreport")){view="home";cur=null}
  render()};
-window.onPers=function(o){if(!ME)return;
- if(!o){PERS_INIT=true;return}
- PERS_INIT=true;P.inc=Array.isArray(o.inc)?o.inc.filter(okId):[];P.exp=Array.isArray(o.exp)?o.exp.filter(okId):[];render()};
+window.onPers=function(o,fromCache){if(!ME)return;
+ if(!o){if(!fromCache){P={inc:[],exp:[]};mSave();render()}PERS_INIT=true;return}
+ PERS_INIT=true;P.inc=Array.isArray(o.inc)?o.inc.filter(okId):[];P.exp=Array.isArray(o.exp)?o.exp.filter(okId):[];mSave();render()};
 window.onAuth=function(u){
  VIEWU=null;OVIEW=null;try{CLOUD.viewAs(null)}catch(e){}try{CLOUD.oviewAs(null)}catch(e){}window._pend=null;if(typeof vbar==="function")vbar();
  clearTimeout(window._bt);document.body.classList.remove("booting","slow");
  S={sites:[]};P={inc:[],exp:[]};LAST={};SYNC=false;PERS_INIT=false;view="main";cur=null;PEND=null;
+ if(u){const m0=mLoad(u.uid);if(m0){S=m0.s;if(m0.p)P=m0.p}}
  if(typeof notesReset==="function")notesReset(u);if(typeof pjReset==="function")pjReset(u);if(typeof attReset==="function")attReset(u);
  if(u)navRestore();else{try{sessionStorage.removeItem("cust_nav")}catch(e){}}
  if(u){try{localStorage.setItem("cust_in","1")}catch(e){}ME=u;$("lpw").value="";document.body.classList.remove("locked");$("lock").style.display="none";render();scrollTo(0,0);CLOUD.start();bgImgs()}
@@ -698,7 +703,7 @@ window.CLOUD={
  async allImgs(){const o={},s=await getDocs(collection(db,...U("images")));s.forEach(x=>o[x.id]=x.data().d);return o},
  start(){this.stop();
   un.push(onSnapshot(collection(db,...U("sites")),s=>{if(s.metadata.hasPendingWrites)return;window.onSites(s.docs.map(d=>d.data()),s.metadata.fromCache)},e=>console.warn(e)));
-  if(!viewUid&&!oviewUid)un.push(onSnapshot(doc(db,...U("meta","personal")),d=>{if(d.metadata.hasPendingWrites)return;window.onPers(d.exists()?d.data():null)},e=>console.warn(e)));
+  if(!viewUid&&!oviewUid)un.push(onSnapshot(doc(db,...U("meta","personal")),d=>{if(d.metadata.hasPendingWrites)return;window.onPers(d.exists()?d.data():null,d.metadata.fromCache)},e=>console.warn(e)));
   if(!viewUid&&!oviewUid)un.push(onSnapshot(doc(db,...U("meta","notes")),d=>{if(d.metadata.hasPendingWrites)return;if(window.onNotes)window.onNotes(d.exists()?d.data():null)},e=>console.warn(e)));
   un.push(onSnapshot(doc(db,...U("meta","projects")),d=>{if(d.metadata.hasPendingWrites)return;if(window.onProj)window.onProj(d.exists()?d.data():null)},e=>console.warn(e)));
   un.push(onSnapshot(collection(db,...U("pmdata")),s=>{if(window.onPm){const o={};s.docs.forEach(d=>{const x=d.data();if(x&&typeof x.k==="string"&&typeof x.s==="string")o[x.k]={s:x.s,t:+x.t||0}});window.onPm(o,s.metadata.fromCache)}},e=>console.warn(e)));
